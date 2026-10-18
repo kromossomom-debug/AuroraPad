@@ -5,3 +5,4 @@ publish/
 *.user
 # Third-party driver installers are downloaded from their official pages, not committed.
 drivers/*.exe
+dist/
