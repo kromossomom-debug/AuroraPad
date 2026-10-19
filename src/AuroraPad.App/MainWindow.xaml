@@ -630,6 +630,11 @@
                                         <Slider Minimum="0" Maximum="60" Value="{Binding TpAutoLock}" />
                                     </DockPanel>
                                     <DockPanel Margin="0,4">
+                                        <TextBlock Style="{StaticResource RowLabel}" Text="{l:T tp.lockHold}" />
+                                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding TpLockHold}" />
+                                        <Slider Minimum="0" Maximum="10" Value="{Binding TpLockHold}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,4">
                                         <TextBlock Style="{StaticResource RowLabel}" Text="{l:T tp.speed}" />
                                         <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding TpSensitivity}" />
                                         <Slider Minimum="1" Maximum="100" Value="{Binding TpSensitivity}" />

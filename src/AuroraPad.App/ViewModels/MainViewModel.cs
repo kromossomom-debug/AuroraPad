@@ -133,7 +133,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _tpEnabled, _tpRightHalf, _tpTap, _tpScroll, _tpInvertScroll, _tpKeepClick;
     [ObservableProperty] private double _tpSensitivity, _tpAcceleration;
     [ObservableProperty] private Option<TouchpadActivation>? _tpActivation;
-    [ObservableProperty] private int _tpHoldMs, _tpAutoLock;
+    [ObservableProperty] private int _tpHoldMs, _tpAutoLock, _tpLockHold;
     [ObservableProperty] private string _tpState = "";
 
     public IReadOnlyList<Option<TouchpadActivation>> TouchpadActivations { get; } =
@@ -382,7 +382,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         TpRightHalf = p.Touchpad.RightHalfRightClick; TpTap = p.Touchpad.TapToClick; TpScroll = p.Touchpad.TwoFingerScroll;
         TpInvertScroll = p.Touchpad.InvertScroll; TpKeepClick = p.Touchpad.KeepClickOnController;
         TpActivation = TouchpadActivations.FirstOrDefault(a => a.Value == p.Touchpad.Activation) ?? TouchpadActivations[0];
-        TpHoldMs = p.Touchpad.HoldMs; TpAutoLock = p.Touchpad.AutoLockSeconds;
+        TpHoldMs = p.Touchpad.HoldMs; TpAutoLock = p.Touchpad.AutoLockSeconds; TpLockHold = p.Touchpad.LockHoldSeconds;
         foreach (var t in TurboButtons) { t.Loading = true; t.IsOn = (p.TurboButtons & t.Button) != 0; t.Loading = false; }
         LeftTrigger.Load(p.LeftTrigger);
         RightTrigger.Load(p.RightTrigger);
@@ -405,7 +405,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         nameof(SelectedMouseSource), nameof(MouseSensitivity), nameof(MouseActivation),
         nameof(MouseInvertX), nameof(MouseInvertY), nameof(MouseSuppressStick), nameof(TurboRate),
         nameof(TpEnabled), nameof(TpSensitivity), nameof(TpAcceleration), nameof(TpRightHalf), nameof(TpTap),
-        nameof(TpScroll), nameof(TpInvertScroll), nameof(TpKeepClick), nameof(TpActivation), nameof(TpHoldMs), nameof(TpAutoLock),
+        nameof(TpScroll), nameof(TpInvertScroll), nameof(TpKeepClick), nameof(TpActivation), nameof(TpHoldMs), nameof(TpAutoLock), nameof(TpLockHold),
     ];
 
     private static readonly HashSet<string> SettingFields =
@@ -459,7 +459,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         p.Touchpad.RightHalfRightClick = TpRightHalf; p.Touchpad.TapToClick = TpTap; p.Touchpad.TwoFingerScroll = TpScroll;
         p.Touchpad.InvertScroll = TpInvertScroll; p.Touchpad.KeepClickOnController = TpKeepClick;
         p.Touchpad.Activation = TpActivation?.Value ?? TouchpadActivation.DoubleTapOrHold;
-        p.Touchpad.HoldMs = TpHoldMs; p.Touchpad.AutoLockSeconds = TpAutoLock;
+        p.Touchpad.HoldMs = TpHoldMs; p.Touchpad.AutoLockSeconds = TpAutoLock; p.Touchpad.LockHoldSeconds = TpLockHold;
         UpdatePreview();
         ProfileEdited();
     }

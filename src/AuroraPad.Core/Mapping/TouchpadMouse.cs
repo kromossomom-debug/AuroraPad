@@ -24,6 +24,8 @@ public sealed class TouchpadMouseSettings
     public int HoldMs { get; set; } = 500;
     /// <summary>Lock again after this many seconds without touching; 0 = stay unlocked.</summary>
     public int AutoLockSeconds { get; set; } = 8;
+    /// <summary>Holding the touchpad click this long turns the mouse off; 0 = disabled.</summary>
+    public int LockHoldSeconds { get; set; } = 5;
     /// <summary>1-100.</summary>
     public double Sensitivity { get; set; } = 40;
     /// <summary>0-100: how much faster quick swipes move the cursor.</summary>
@@ -63,6 +65,9 @@ public sealed class TouchpadMouse
     private double _lastActivity;
     private double _lastTapEnd = double.NegativeInfinity;
     private bool _ignoreUntilLift; // the gesture that unlocked must not also click or move
+    private bool _lockedUntilLift; // just locked by a long press: wait for the finger to leave before re-arming
+    private double _pressStart = -1;
+    private bool _manualLocked;    // locked by long press: even AlwaysOn needs a gesture to come back
 
     /// <summary>True while touches drive the mouse.</summary>
     public bool IsActive { get; private set; }
@@ -91,18 +96,41 @@ public sealed class TouchpadMouse
             _travel += Math.Abs(t1.X - _last1.X) + Math.Abs(t1.Y - _last1.Y);
         if (fingers > 0 || pressed) _lastActivity = now;
 
+        if (pressed && _pressStart < 0) _pressStart = now;
+        if (!pressed) _pressStart = -1;
+        if (_lockedUntilLift)
+        {
+            if (fingers == 0 && !pressed) _lockedUntilLift = false;
+            _last1 = t1; _last2 = t2;
+            return false;
+        }
+
+        // Long press on the pad switches the mouse off (any activation mode).
+        if (IsActive && s.LockHoldSeconds > 0 && pressed && now - _pressStart >= s.LockHoldSeconds)
+        {
+            Release();
+            _unlocked = false;
+            _lockedUntilLift = true;
+            _manualLocked = true;
+            _ignoreUntilLift = false;
+            SetActive(false);
+            _last1 = t1; _last2 = t2;
+            return false;
+        }
+
         bool tapEnded = fingers == 0 && wasTouching && !pressed
                         && now - _touchStart < TapMaxSeconds && _travel < TapMaxTravel;
 
         // ---- Lock / unlock ------------------------------------------------------
-        if (s.Activation == TouchpadActivation.AlwaysOn)
+        var activation = s.Activation == TouchpadActivation.AlwaysOn && _manualLocked ? TouchpadActivation.DoubleTapOrHold : s.Activation;
+        if (activation == TouchpadActivation.AlwaysOn)
         {
             SetActive(true);
         }
         else if (!_unlocked)
         {
-            bool viaDoubleTap = s.Activation is TouchpadActivation.DoubleTap or TouchpadActivation.DoubleTapOrHold;
-            bool viaHold = s.Activation is TouchpadActivation.Hold or TouchpadActivation.DoubleTapOrHold;
+            bool viaDoubleTap = activation is TouchpadActivation.DoubleTap or TouchpadActivation.DoubleTapOrHold;
+            bool viaHold = activation is TouchpadActivation.Hold or TouchpadActivation.DoubleTapOrHold;
 
             if (tapEnded)
             {
@@ -198,6 +226,7 @@ public sealed class TouchpadMouse
     private void Unlock(double now)
     {
         _unlocked = true;
+        _manualLocked = false;
         _lastActivity = now;
         SetActive(true);
     }

@@ -58,13 +58,13 @@ if (args.Length > 0 && args[0] == "touchgate")
     tp.ActiveChanged += on => Console.WriteLine($"   -> touchpad mouse {(on ? "ATIVO" : "travado")}");
     var sw = System.Diagnostics.Stopwatch.StartNew();
     ushort x = 900;
-    void Feed(bool touching, int ms, bool moving = false)
+    void Feed(bool touching, int ms, bool moving = false, bool click = false)
     {
         var end = sw.Elapsed.TotalMilliseconds + ms;
         while (sw.Elapsed.TotalMilliseconds < end)
         {
             if (moving) x += 6;
-            var inp = new DualSenseInput { Touch1 = new TouchPoint(touching, 1, x, 500) };
+            var inp = new DualSenseInput { Touch1 = new TouchPoint(touching, 1, x, 500), Buttons = click ? DualSenseButtons.Touchpad : DualSenseButtons.None };
             tp.Process(inp, settings, sw.Elapsed.TotalSeconds);
             Thread.Sleep(4);
         }
@@ -74,6 +74,9 @@ if (args.Length > 0 && args[0] == "touchgate")
     Console.WriteLine("3) Deslizar com ele ativo:"); sent = 0; Feed(true, 200, true); Feed(false, 50); Console.WriteLine($"   eventos de mouse: {sent}");
     Console.WriteLine("4) Ficar 1,3 s sem tocar:"); Feed(false, 1300);
     Console.WriteLine("5) Segurar o dedo parado 700 ms:"); Feed(true, 700); Feed(false, 50);
+    Console.WriteLine("6) Segurar o clique do touchpad 5,2 s:"); Feed(true, 5200, click: true);
+    Console.WriteLine("7) Soltar o clique mas deixar o dedo apoiado 1 s (não pode religar):"); Feed(true, 1000);
+    Console.WriteLine("8) Tirar o dedo e dar dois toques:"); Feed(false, 100); Feed(true, 60); Feed(false, 100); Feed(true, 60); Feed(false, 100);
     AuroraPad.Core.Mapping.InputSimulator.TestSink = null;
     return 0;
 }
