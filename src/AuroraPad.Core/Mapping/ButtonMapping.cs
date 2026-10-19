@@ -71,6 +71,10 @@ public sealed class MouseSettings
     public int FlickPixels360 { get; set; } = 3000;
     /// <summary>Gyro mouse: smooth out tiny hand tremors (0 = off, 100 = strongest).</summary>
     public int GyroSmoothing { get; set; } = 40;
+    /// <summary>Player space: yaw follows the real-world vertical axis, so tilting the controller doesn't skew aim.</summary>
+    public bool GyroPlayerSpace { get; set; } = true;
+    /// <summary>0-100: extra speed for fast flicks (slow movements stay precise).</summary>
+    public int GyroAcceleration { get; set; } = 30;
 }
 
 /// <summary>Gyro added to the virtual controller's right stick, for games without mouse aiming.</summary>
@@ -82,6 +86,7 @@ public sealed class GyroStickSettings
     /// <summary>Only active while this button is held (e.g. L2 to aim); None = always.</summary>
     public DualSenseButtons ActivationButton { get; set; } = DualSenseButtons.None;
     public bool InvertY { get; set; }
+    public bool PlayerSpace { get; set; } = true;
 }
 
 /// <summary>Names for keys shown in the mapping UI.</summary>

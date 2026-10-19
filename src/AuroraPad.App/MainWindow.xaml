@@ -497,6 +497,19 @@
                         </Border>
                         <Border Style="{StaticResource Card}">
                             <StackPanel>
+                                <TextBlock Style="{StaticResource H2}" Text="{l:T spk.title}" />
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,8" Text="{l:T spk.hint}" />
+                                <CheckBox Content="{l:T spk.enable}" IsChecked="{Binding SpeakerFromPc}" FontWeight="SemiBold" />
+                                <DockPanel Margin="0,4" IsEnabled="{Binding SpeakerFromPc}">
+                                    <TextBlock Style="{StaticResource RowLabel}" Text="{l:T spk.volume}" />
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding SpeakerVolume}" />
+                                    <Slider Minimum="0" Maximum="100" Value="{Binding SpeakerVolume}" />
+                                </DockPanel>
+                                <TextBlock Text="{Binding SpeakerStatus}" Style="{StaticResource Dim}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
                                 <TextBlock Style="{StaticResource H2}" Text="{l:T rumble.test}" />
                                 <WrapPanel Margin="0,0,0,10">
                                     <WrapPanel.Resources>
@@ -668,6 +681,12 @@
                                     <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding GyroSmoothing}" />
                                     <Slider Minimum="0" Maximum="100" Value="{Binding GyroSmoothing}" />
                                 </DockPanel>
+                                <DockPanel Margin="0,4">
+                                    <TextBlock Style="{StaticResource RowLabel}" Text="{l:T km.gyroAccel}" />
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding GyroAcceleration}" />
+                                    <Slider Minimum="0" Maximum="100" Value="{Binding GyroAcceleration}" />
+                                </DockPanel>
+                                <CheckBox Content="{l:T km.playerSpace}" IsChecked="{Binding GyroPlayerSpace}" />
                                 <TextBlock Style="{StaticResource Dim}" Text="{l:T km.flickHint}" />
                             </StackPanel>
                         </Border>
@@ -692,6 +711,7 @@
                                         <ComboBox ItemsSource="{Binding ActivationButtons}" SelectedItem="{Binding GsActivation}" HorizontalAlignment="Left" />
                                     </DockPanel>
                                     <CheckBox Content="{l:T km.invertY}" IsChecked="{Binding GsInvertY}" />
+                                    <CheckBox Content="{l:T km.playerSpace}" IsChecked="{Binding GsPlayerSpace}" />
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -909,6 +929,26 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- ================= GUIDE ================= -->
+            <TabItem Header="{l:T nav.guide}" Style="{StaticResource NavTab}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="28">
+                        <TextBlock Style="{StaticResource H1}" Text="{l:T guide.title}" />
+                        <ItemsControl ItemsSource="{Binding GuideTopics}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource Card}">
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource H2}" Text="{Binding Title}" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding Body}" TextWrapping="Wrap" LineHeight="20" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
             <!-- ================= SETTINGS ================= -->
             <TabItem Header="{l:T nav.settings}" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">

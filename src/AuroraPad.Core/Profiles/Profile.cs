@@ -43,6 +43,11 @@ public sealed class Profile
     /// <summary>When rumble goes to the haptics, stop the classic rumble emulation.</summary>
     public bool HapticsReplaceRumble { get; set; } = true;
 
+    /// <summary>Play the PC's sound on the DualSense speaker / headset jack too (USB only).</summary>
+    public bool SpeakerFromPc { get; set; }
+    /// <summary>0-100.</summary>
+    public int SpeakerVolume { get; set; } = 80;
+
     // Emulation
     public EmulationMode Emulation { get; set; } = EmulationMode.Xbox360;
     public bool SwapAB { get; set; }

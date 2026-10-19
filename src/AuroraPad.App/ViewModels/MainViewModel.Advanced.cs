@@ -31,6 +31,11 @@ public sealed partial class MainViewModel
     [ObservableProperty] private bool _gyroAutoCalibrate;
     [ObservableProperty] private bool _lowBatteryAlert;
     [ObservableProperty] private string _hapticsFileStatus = "";
+    [ObservableProperty] private bool _speakerFromPc;
+    [ObservableProperty] private bool _gyroPlayerSpace, _gsPlayerSpace;
+    [ObservableProperty] private int _gyroAcceleration;
+    [ObservableProperty] private int _speakerVolume;
+    [ObservableProperty] private string _speakerStatus = "";
     [ObservableProperty] private string _memoryText = "";
 
     private void UpdateMemory()
@@ -46,6 +51,7 @@ public sealed partial class MainViewModel
     [
         nameof(ShiftButton), nameof(TriggerHalfPull), nameof(TriggerFullPull), nameof(FlickPixels360), nameof(GyroSmoothing),
         nameof(GsEnabled), nameof(GsInvertY), nameof(GsDps), nameof(GsActivation),
+        nameof(SpeakerFromPc), nameof(SpeakerVolume), nameof(GyroPlayerSpace), nameof(GsPlayerSpace), nameof(GyroAcceleration),
     ];
 
     private static readonly HashSet<string> AdvancedSettingFields = [nameof(GyroAutoCalibrate), nameof(LowBatteryAlert)];
@@ -59,6 +65,8 @@ public sealed partial class MainViewModel
         FlickPixels360 = p.Mouse.FlickPixels360; GyroSmoothing = p.Mouse.GyroSmoothing;
         GsEnabled = p.GyroStick.Enabled; GsInvertY = p.GyroStick.InvertY; GsDps = p.GyroStick.FullDeflectionDps;
         GsActivation = ActivationButtons.FirstOrDefault(b => b.Value == p.GyroStick.ActivationButton) ?? ActivationButtons[0];
+        SpeakerFromPc = p.SpeakerFromPc; SpeakerVolume = p.SpeakerVolume;
+        GyroPlayerSpace = p.Mouse.GyroPlayerSpace; GyroAcceleration = p.Mouse.GyroAcceleration; GsPlayerSpace = p.GyroStick.PlayerSpace;
         LoadMappingRows(p);
     }
 
@@ -79,6 +87,8 @@ public sealed partial class MainViewModel
         p.Mouse.FlickPixels360 = FlickPixels360; p.Mouse.GyroSmoothing = GyroSmoothing;
         p.GyroStick.Enabled = GsEnabled; p.GyroStick.InvertY = GsInvertY; p.GyroStick.FullDeflectionDps = GsDps;
         p.GyroStick.ActivationButton = GsActivation?.Value ?? DualSenseButtons.None;
+        p.SpeakerFromPc = SpeakerFromPc; p.SpeakerVolume = SpeakerVolume;
+        p.Mouse.GyroPlayerSpace = GyroPlayerSpace; p.Mouse.GyroAcceleration = GyroAcceleration; p.GyroStick.PlayerSpace = GsPlayerSpace;
     }
 
     /// <summary>Rows show one layer; the other layer's mappings are kept as they are.</summary>
@@ -94,6 +104,10 @@ public sealed partial class MainViewModel
         LoadMappingRows(SelectedProfile);
         _loading = false;
     }
+
+    /// <summary>Topics of the in-app guide (title, text).</summary>
+    public IReadOnlyList<GuideTopic> GuideTopics { get; } =
+        Enumerable.Range(1, 10).Select(n => new GuideTopic(L.T($"guide.{n}.t"), L.T($"guide.{n}.b"))).ToList();
 
     // ---- Background mode ------------------------------------------------------
 
@@ -183,3 +197,6 @@ public sealed partial class MainViewModel
             foreach (var c in Controllers) c.Session.GyroAutoCalibrate = GyroAutoCalibrate;
     }
 }
+
+/// <summary>One card of the in-app guide.</summary>
+public sealed record GuideTopic(string Title, string Body);

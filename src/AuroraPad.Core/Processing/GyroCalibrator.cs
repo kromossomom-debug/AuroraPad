@@ -1,4 +1,4 @@
-using AuroraPad.Core.Protocol;
+﻿using AuroraPad.Core.Protocol;
 
 namespace AuroraPad.Core.Processing;
 
@@ -25,6 +25,14 @@ public sealed class GyroCalibrator
     /// <summary>Corrected angular velocity in degrees per second: pitch (X), yaw (Y), roll (Z).</summary>
     public (double X, double Y, double Z) Dps { get; private set; }
 
+    /// <summary>
+    /// Yaw relative to the real world (gravity axis), in degrees per second: turning left/right gives the
+    /// same result whether the controller is held level, tilted forward or on its side ("player space").
+    /// </summary>
+    public double PlayerYawDps { get; private set; }
+
+    private double _gravX, _gravY = 1, _gravZ;
+
     public void Update(DualSenseInput i, double now)
     {
         double gx = i.GyroX, gy = i.GyroY, gz = i.GyroZ;
@@ -50,6 +58,18 @@ public sealed class GyroCalibrator
             }
         }
         Dps = ((gx - _biasX) / 16.0, (gy - _biasY) / 16.0, (gz - _biasZ) / 16.0);
+
+        // Gravity direction from a slow low-pass of the accelerometer (ignores quick hand shakes).
+        double am = Math.Sqrt((double)i.AccelX * i.AccelX + (double)i.AccelY * i.AccelY + (double)i.AccelZ * i.AccelZ);
+        if (am > 1000)
+        {
+            const double k = 0.02;
+            _gravX += (i.AccelX / am - _gravX) * k; _gravY += (i.AccelY / am - _gravY) * k; _gravZ += (i.AccelZ / am - _gravZ) * k;
+            double gm = Math.Sqrt(_gravX * _gravX + _gravY * _gravY + _gravZ * _gravZ);
+            _gravX /= gm; _gravY /= gm; _gravZ /= gm;
+        }
+        var (dx, dy, dz) = Dps;
+        PlayerYawDps = dx * _gravX + dy * _gravY + dz * _gravZ;
     }
 
     /// <summary>Waits until the controller has rested still long enough to learn the offset.</summary>

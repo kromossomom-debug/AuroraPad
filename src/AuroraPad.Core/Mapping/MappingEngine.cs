@@ -269,7 +269,7 @@ public sealed class MappingEngine
             {
                 if (s.ActivationButton != DualSenseButtons.None && (i.Buttons & s.ActivationButton) == 0) { _gyroWindow.Clear(); break; }
                 var (pitch, yawRate, _) = Gyro.Dps;
-                double yaw = -yawRate, pit = -pitch;
+                double yaw = -(s.GyroPlayerSpace ? Gyro.PlayerYawDps : yawRate), pit = -pitch;
                 // Soft tiered smoothing: slow, small movements (hand tremor) are averaged, fast flicks pass through.
                 double speed = Math.Sqrt(yaw * yaw + pit * pit);
                 double smoothBelow = Math.Clamp(s.GyroSmoothing, 0, 100) / 100.0 * 12; // dps
@@ -284,8 +284,10 @@ public sealed class MappingEngine
                 }
                 if (Math.Abs(yaw) < 0.3) yaw = 0;
                 if (Math.Abs(pit) < 0.3) pit = 0;
-                dx = yaw * dt * sens * 0.6;
-                dy = pit * dt * sens * 0.6;
+                // Acceleration: speeds above ~60°/s get up to (1 + accel) times more cursor travel.
+                double boost = 1 + Math.Clamp(s.GyroAcceleration, 0, 100) / 100.0 * Math.Clamp((speed - 20) / 60, 0, 1);
+                dx = yaw * dt * sens * 0.6 * boost;
+                dy = pit * dt * sens * 0.6 * boost;
                 break;
             }
 

@@ -333,6 +333,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             : _hidHide.HiddenIds.Count > 0 ? L.F("hh.hidden", _hidHide.HiddenIds.Count)
             : L.T("hh.ok");
         var hs = SelectedController?.Session;
+        SpeakerStatus = hs == null || !SpeakerFromPc ? "" : hs.SpeakerError is { } se ? L.F("spk.error", se) : L.T("spk.on");
         TpState = hs == null || !TpEnabled ? "" : hs.TouchpadMouseActive ? L.T("tp.state.on") : L.T("tp.state.off");
         HapticsStatus = hs == null ? "" : hs.HapticsDevice != null ? L.F("ctl.haptics", hs.HapticsDevice)
             : hs.HapticsError != null ? L.F("ctl.hapticsError", hs.HapticsError) : "";

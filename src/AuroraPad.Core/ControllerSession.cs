@@ -28,6 +28,8 @@ public sealed class ControllerSession : IDisposable
 
     public string? HapticsError { get; private set; }
     public string? HapticsDevice => _haptics?.DeviceName;
+    /// <summary>Why the PC-audio mirror to the controller is not playing (null = playing or off).</summary>
+    public string? SpeakerError { get; private set; }
     private (byte R, byte G, byte B)? _gameLightbar;
     private byte _gameRumbleLarge, _gameRumbleSmall;
     private byte _testRumbleLarge, _testRumbleSmall;
@@ -332,7 +334,8 @@ public sealed class ControllerSession : IDisposable
         var g = p.GyroStick;
         if (!g.Enabled) return pad;
         if (g.ActivationButton != DualSenseButtons.None && (input.Buttons & g.ActivationButton) == 0) return pad;
-        var (pitch, yaw, _) = _mapping.Gyro.Dps;
+        var (pitch, yawLocal, _) = _mapping.Gyro.Dps;
+        double yaw = g.PlayerSpace ? _mapping.Gyro.PlayerYawDps : yawLocal;
         double full = Math.Max(10, g.FullDeflectionDps);
         static double Shape(double v) => Math.Abs(v) < 0.02 ? 0 : Math.Sign(v) * Math.Min(1, 0.08 + Math.Abs(v)); // small anti-deadzone so slow aim registers
         double sx = Shape(-yaw / full), sy = Shape((g.InvertY ? -pitch : pitch) / full);
@@ -362,7 +365,7 @@ public sealed class ControllerSession : IDisposable
         {
             _haptics = CreateHapticsEngine(out var err);
             if (_haptics == null) return err;
-            _haptics.Configure(Profile.HapticsMode, Profile.HapticsGain / 100.0, Profile.HapticsLowPassHz);
+            ConfigureHaptics(Profile);
         }
         return _haptics.PlayFile(path);
     }
@@ -381,10 +384,12 @@ public sealed class ControllerSession : IDisposable
     private void ApplyHaptics()
     {
         var p = Profile;
-        bool want = p.HapticsMode != Haptics.HapticsMode.Off && !Device.IsDualShock4;
+        // The engine also carries the PC-audio mirror to the controller's speaker / headset jack.
+        bool want = (p.HapticsMode != Haptics.HapticsMode.Off || p.SpeakerFromPc) && !Device.IsDualShock4;
         if (!want)
         {
-            if (p.HapticsMode == Haptics.HapticsMode.Off && _haptics != null) { _haptics.Configure(Haptics.HapticsMode.Off, 1, 200); HapticsError = null; return; }
+            if (p.HapticsMode == Haptics.HapticsMode.Off && _haptics != null) { ConfigureHaptics(p); HapticsError = null; return; }
+            SpeakerError = p.SpeakerFromPc ? "o DualShock 4 não tem saída de áudio pelo app" : null;
             _haptics?.Dispose();
             _haptics = null;
             HapticsError = p.HapticsMode == Haptics.HapticsMode.Off ? null : "o DualShock 4 não tem hápticos";
@@ -395,7 +400,13 @@ public sealed class ControllerSession : IDisposable
             _haptics = CreateHapticsEngine(out var err);
             HapticsError = err;
         }
-        _haptics?.Configure(p.HapticsMode, p.HapticsGain / 100.0, p.HapticsLowPassHz);
+        if (_haptics != null) ConfigureHaptics(p);
+    }
+
+    private void ConfigureHaptics(Profile p)
+    {
+        _haptics!.Configure(p.HapticsMode, p.HapticsGain / 100.0, p.HapticsLowPassHz, p.SpeakerFromPc, p.SpeakerVolume / 100.0);
+        SpeakerError = p.SpeakerFromPc ? _haptics.SpeakerError : null;
     }
 
     private void OnShortcut(ShortcutAction action)
