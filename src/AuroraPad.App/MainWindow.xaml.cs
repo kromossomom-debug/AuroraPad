@@ -10,6 +10,7 @@ public partial class MainWindow : Window
     private readonly MainViewModel _vm;
     private readonly Forms.NotifyIcon _tray;
     private bool _exiting;
+    private bool _trayTipShown;
     private WindowState _restoreState = WindowState.Normal;
 
     public MainWindow()
@@ -110,12 +111,18 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
-        // With "minimize to tray" on, the close button just hides the window; "Sair" in the tray menu quits.
-        if (_vm.MinimizeToTray && !_exiting)
+        // The X button never quits: the window hides and AuroraPad keeps running in the tray
+        // (controllers, emulation and mappings stay active). "Sair" in the tray menu quits.
+        if (!_exiting)
         {
             e.Cancel = true;
+            SavePlacement();
             Hide();
-            _tray.ShowBalloonTip(2000, "AuroraPad", Localization.L.T("tray.stillRunning"), Forms.ToolTipIcon.Info);
+            if (!_trayTipShown)
+            {
+                _trayTipShown = true;
+                _tray.ShowBalloonTip(3000, "AuroraPad", Localization.L.T("tray.stillRunning"), Forms.ToolTipIcon.Info);
+            }
             return;
         }
         SavePlacement();

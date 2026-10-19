@@ -17,7 +17,7 @@
     <!-- Only for the tray icon (NotifyIcon); WinForms namespaces are not imported globally. -->
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>AuroraPad</AssemblyName>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <ApplicationIcon>..\..\assets\aurorapad.ico</ApplicationIcon>
     <Product>AuroraPad</Product>
     <!-- Lighter footprint for an app that mostly runs in the tray. -->

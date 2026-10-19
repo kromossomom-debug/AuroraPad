@@ -20,6 +20,12 @@ public sealed class OutputState
     public TriggerEffect LeftTrigger { get; set; } = TriggerEffect.Off();
     public TriggerEffect RightTrigger { get; set; } = TriggerEffect.Off();
 
+    /// <summary>Bluetooth audio: route the controller's audio path to the speaker (or headset jack).</summary>
+    public bool SpeakerEnabled { get; set; }
+    public bool SpeakerToHeadset { get; set; }
+    /// <summary>0-100.</summary>
+    public int SpeakerVolume { get; set; } = 80;
+
     /// <summary>Player LED bitmask presets (5 LEDs, bit 0 is leftmost).</summary>
     public static byte PlayerPattern(int player) => player switch
     {
@@ -70,6 +76,22 @@ public static class OutputReportBuilder
         }
 
         var common = report.AsSpan(c, 47);
+        WriteCommon(s, common, releaseBootLeds, bluetooth);
+
+        if (bluetooth)
+        {
+            uint crc = Crc32.Compute(0xA2, report.AsSpan(0, BluetoothLength - 4));
+            report[74] = (byte)crc;
+            report[75] = (byte)(crc >> 8);
+            report[76] = (byte)(crc >> 16);
+            report[77] = (byte)(crc >> 24);
+        }
+        return report;
+    }
+
+    /// <summary>The 47-byte state block (same layout in report 0x31 and in the Bluetooth audio report 0x36).</summary>
+    public static void WriteCommon(OutputState s, Span<byte> common, bool releaseBootLeds, bool bluetooth)
+    {
         common[0] = (byte)(CompatibleVibration | HapticsSelect | RightTriggerEffect | LeftTriggerEffect);
         common[1] = (byte)(MicMuteLedControl | LightbarControl | PlayerIndicatorControl);
         common[2] = s.RumbleRight; // high-frequency (small) motor
@@ -85,14 +107,15 @@ public static class OutputReportBuilder
         common[45] = s.LightbarG;
         common[46] = s.LightbarB;
 
-        if (bluetooth)
+        // Bluetooth speaker: enable the audio path (valid_flag0 0x20 speaker volume | 0x80 audio control,
+        // valid_flag1 0x80 audio control 2), speaker volume, path select and preamp gain.
+        if (bluetooth && s.SpeakerEnabled)
         {
-            uint crc = Crc32.Compute(0xA2, report.AsSpan(0, BluetoothLength - 4));
-            report[74] = (byte)crc;
-            report[75] = (byte)(crc >> 8);
-            report[76] = (byte)(crc >> 16);
-            report[77] = (byte)(crc >> 24);
+            common[0] |= 0xA0;
+            common[1] |= 0x80;
+            common[5] = (byte)Math.Clamp(s.SpeakerVolume, 0, 100);
+            common[7] = s.SpeakerToHeadset ? (byte)0x00 : (byte)0x30;
+            common[37] = 0x02;
         }
-        return report;
     }
 }

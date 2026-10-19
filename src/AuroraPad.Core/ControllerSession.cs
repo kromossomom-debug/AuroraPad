@@ -376,7 +376,7 @@ public sealed class ControllerSession : IDisposable
         if (Device.Connection == ConnectionType.Bluetooth)
         {
             error = null;
-            return Haptics.HapticsEngine.CreateBluetooth(Device.WriteReport, "DualSense (Bluetooth)");
+            return Haptics.HapticsEngine.CreateBluetooth(Device.WriteReport, "DualSense (Bluetooth)", Device.BuildStateBlock);
         }
         return Haptics.HapticsEngine.TryCreate(Index, out error);
     }
@@ -407,6 +407,14 @@ public sealed class ControllerSession : IDisposable
     {
         _haptics!.Configure(p.HapticsMode, p.HapticsGain / 100.0, p.HapticsLowPassHz, p.SpeakerFromPc, p.SpeakerVolume / 100.0);
         SpeakerError = p.SpeakerFromPc ? _haptics.SpeakerError : null;
+        // Bluetooth: the state reports must also switch the controller's audio path to the speaker.
+        bool btSpeaker = Device.Connection == ConnectionType.Bluetooth && p.SpeakerFromPc && SpeakerError == null;
+        if (Device.Output.SpeakerEnabled != btSpeaker)
+        {
+            Device.Output.SpeakerEnabled = btSpeaker;
+            Device.Output.SpeakerVolume = 100; // loudness is set in software by the volume slider
+            Device.MarkOutputDirty();
+        }
     }
 
     private void OnShortcut(ShortcutAction action)

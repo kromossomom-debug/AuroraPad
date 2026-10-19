@@ -80,6 +80,29 @@ if (args.Length > 0 && args[0] == "inputlog")
     return 0;
 }
 
+// "btspeaker": Bluetooth speaker report (0x36) generator against a fake controller (nothing is sent).
+if (args.Length > 0 && args[0] == "btspeaker")
+{
+    var got36 = new List<(double Ms, byte[] Data)>();
+    var clk = System.Diagnostics.Stopwatch.StartNew();
+    var fakeState = new byte[47]; fakeState[0] = 0x0F; fakeState[44] = 0xAB; // pretend lightbar red = 0xAB
+    var eng = AuroraPad.Core.Haptics.HapticsEngine.CreateBluetooth(r => { lock (got36) got36.Add((clk.Elapsed.TotalMilliseconds, (byte[])r.Clone())); }, "fake", () => fakeState);
+    eng.Configure(AuroraPad.Core.Haptics.HapticsMode.Off, 1.0, 200, speaker: true, speakerVolume: 0.8);
+    Thread.Sleep(3000);
+    eng.Dispose();
+    List<(double Ms, byte[] Data)> all; lock (got36) all = got36.Where(g => g.Data[0] == 0x36).ToList();
+    var r0 = all[^1].Data;
+    uint crc = 0xFFFFFFFF;
+    foreach (var b in new byte[] { 0xA2 }.Concat(r0.Take(394))) { crc ^= b; for (int k = 0; k < 8; k++) crc = (crc & 1) != 0 ? 0xEDB88320 ^ (crc >> 1) : crc >> 1; }
+    crc = ~crc;
+    var iv = all.Zip(all.Skip(1), (a, b) => b.Ms - a.Ms).ToList();
+    Console.WriteLine($"0x36 reports in 1.5 s: {all.Count}, size {r0.Length}, speaker error: {eng.SpeakerError ?? "none"}");
+    Console.WriteLine($"headers: cfg {r0[2]:X2}/{r0[3]} state {r0[11]:X2}/{r0[12]} haptics {r0[76]:X2}/{r0[77]} speaker {r0[142]:X2}/{r0[143]}");
+    Console.WriteLine($"state copied: lightbar byte = 0x{r0[13 + 44]:X2} (expected AB)");
+    Console.WriteLine($"opus frame: first bytes {Convert.ToHexString(r0, 144, 8)}, non-zero bytes {r0.Skip(144).Take(200).Count(b => b != 0)}");
+    Console.WriteLine($"interval avg {iv.Average():F2} ms, max {iv.Max():F2}; span-based period {(all[^1].Ms - all[0].Ms) / (all.Count - 1):F3} ms, first at {all[0].Ms:F0} ms; CRC ok: {BitConverter.ToUInt32(r0, 394) == crc}");
+    return 0;
+}
 // "bthaptics": Bluetooth haptics report generator against a fake controller (nothing is sent).
 if (args.Length > 0 && args[0] == "bthaptics")
 {

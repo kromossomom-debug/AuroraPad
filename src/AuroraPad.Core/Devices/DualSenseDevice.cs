@@ -129,6 +129,14 @@ public sealed class DualSenseDevice : IDisposable
         Disconnected?.Invoke(this);
     }
 
+    /// <summary>Current 47-byte state block (lightbar, LEDs, triggers, rumble, audio path) for report 0x36.</summary>
+    public byte[] BuildStateBlock()
+    {
+        var block = new byte[47];
+        OutputReportBuilder.WriteCommon(Output, block, releaseBootLeds: false, bluetooth: true);
+        return block;
+    }
+
     /// <summary>Sends a raw output report (e.g. Bluetooth haptics 0x32), serialized with the state reports.</summary>
     public void WriteReport(byte[] report)
     {

@@ -56,10 +56,19 @@ public sealed class HapticsEngine : IDisposable
     private const int BtSampleRate = 3000;
     private const int BtFramesPerReport = 32;         // 32 stereo frames = 64 bytes = 10.67 ms
     private const int BtReportSize = 141;
+    private const int Bt36Size = 398;               // haptics + Opus speaker report
+    private const int BtSpeakerFrames = 512;        // 48 kHz frames per packet (10.67 ms)
+    private BiQuadFilter? _btLowPass;
+    private int _spkFrames = BtSpeakerFrames;
 
-    private HapticsEngine(Action<byte[]> writeReport, string name)
+    private readonly Func<byte[]>? _btState;
+    private ISampleProvider? _speakerSrc;      // 48 kHz stereo PC audio (Bluetooth speaker path)
+    private Concentus.IOpusEncoder? _opus;
+
+    private HapticsEngine(Action<byte[]> writeReport, string name, Func<byte[]>? stateBlock)
     {
         _btWrite = writeReport;
+        _btState = stateBlock;
         DeviceName = name;
         MixFormatDescription = "Bluetooth HID 0x32, 8-bit stereo @ 3 kHz";
         _mixer = new HapticsMixer(BtSampleRate, 4);
@@ -68,7 +77,27 @@ public sealed class HapticsEngine : IDisposable
     }
 
     /// <summary>Haptics for a DualSense connected over Bluetooth; <paramref name="writeReport"/> sends a raw output report.</summary>
-    public static HapticsEngine CreateBluetooth(Action<byte[]> writeReport, string name) => new(writeReport, name);
+    public static HapticsEngine CreateBluetooth(Action<byte[]> writeReport, string name, Func<byte[]>? stateBlock = null) => new(writeReport, name, stateBlock);
+
+    // High-resolution waitable timer (Windows 10 1803+): sub-millisecond sleeps without burning CPU,
+    // so audio packets leave exactly every 10.67 ms and the controller's buffer never runs dry.
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern IntPtr CreateWaitableTimerExW(IntPtr attributes, string? name, uint flags, uint access);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern bool SetWaitableTimer(IntPtr timer, ref long dueTime, int period, IntPtr completion, IntPtr arg, bool resume);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern uint WaitForSingleObject(IntPtr handle, uint ms);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern bool CloseHandle(IntPtr handle);
+    [ThreadStatic] private static IntPtr _hrTimer;
+
+    private static void PreciseSleep(double ms)
+    {
+        if (_hrTimer == IntPtr.Zero) _hrTimer = CreateWaitableTimerExW(IntPtr.Zero, null, 0x2 /* HIGH_RESOLUTION */, 0x1F0003);
+        if (_hrTimer == IntPtr.Zero) { Thread.Sleep(Math.Max(1, (int)Math.Round(ms))); return; }
+        long due = -(long)(ms * 10_000); // relative, 100 ns units
+        if (SetWaitableTimer(_hrTimer, ref due, 0, IntPtr.Zero, IntPtr.Zero, false)) WaitForSingleObject(_hrTimer, 1000);
+    }
 
     [System.Runtime.InteropServices.DllImport("winmm.dll")] private static extern uint timeBeginPeriod(uint ms);
     [System.Runtime.InteropServices.DllImport("winmm.dll")] private static extern uint timeEndPeriod(uint ms);
@@ -79,6 +108,10 @@ public sealed class HapticsEngine : IDisposable
         //   0x11 (7 bytes): FE 00 00 00 00 FF <counter>, 0x12 (64 bytes): interleaved signed 8-bit L/R samples,
         // zero padding, and CRC-32 (seeded with 0xA2) over bytes 0..136 stored little-endian at 137.
         var report = new byte[BtReportSize];
+        var report36 = new byte[Bt36Size];
+        var pcm = new float[(BtSpeakerFrames + 16) * 2];
+        var pcm480 = new short[480 * 2];
+        var opusOut = new byte[4000];
         var frames = new float[BtFramesPerReport * 4];
         byte seq = 0, counter = 0;
         double period = BtFramesPerReport * 1000.0 / BtSampleRate;
@@ -90,6 +123,88 @@ public sealed class HapticsEngine : IDisposable
             while (!_stopped)
             {
                 _mixer.Read(frames, 0, frames.Length);
+
+                // PC audio at 48 kHz: 512 stereo frames per 10.67 ms packet.
+                bool speakerOn = false;
+                var spk = _speakerSrc;
+                if (spk != null)
+                {
+                    // Drift control: read a few frames more or less than 512 so the capture buffer stays near
+                    // ~40 ms. Packet timing and the sound card clock never match exactly; without this the
+                    // buffer slowly empties (crackles) or fills (growing delay).
+                    var lb = _loopBuffer;
+                    double bufferedMs = lb == null ? 40 : lb.BufferedDuration.TotalMilliseconds;
+                    _spkFrames = Math.Clamp((int)Math.Round(BtSpeakerFrames + (bufferedMs - 40) * 0.5), BtSpeakerFrames - 16, BtSpeakerFrames + 16);
+                    int got = spk.Read(pcm, 0, _spkFrames * 2);
+                    if (got < _spkFrames * 2) Array.Clear(pcm, got, _spkFrames * 2 - got);
+                    if (_mixer.UseAudioHaptics && _btLowPass != null)
+                    {
+                        // Low-pass and decimate 48 kHz -> 3 kHz (16:1) into the haptic frames.
+                        for (int i = 0; i < BtFramesPerReport; i++)
+                        {
+                            float acc = 0;
+                            for (int k = 0; k < 16; k++)
+                            {
+                                int n = (i * 16 + k) * 2;
+                                acc += _btLowPass.Transform((pcm[n] + pcm[n + 1]) * 0.5f);
+                            }
+                            float h = Math.Clamp(acc / 16 * 3f * _mixer.Gain, -1f, 1f);
+                            frames[i * 4 + 2] = Math.Clamp(frames[i * 4 + 2] + h, -1f, 1f);
+                            frames[i * 4 + 3] = Math.Clamp(frames[i * 4 + 3] + h, -1f, 1f);
+                        }
+                    }
+                    speakerOn = _mixer.Speaker;
+                }
+
+                if (speakerOn)
+                {
+                    // Resample the frames read (~512) -> 480 (linear) and encode one 10 ms CBR Opus frame of 200 bytes.
+                    for (int i = 0; i < 480; i++)
+                    {
+                        double pos = i * (_spkFrames - 1) / 479.0;
+                        int i0 = (int)pos; double t = pos - i0; int i1 = Math.Min(i0 + 1, _spkFrames - 1);
+                        for (int ch = 0; ch < 2; ch++)
+                        {
+                            double v = pcm[i0 * 2 + ch] * (1 - t) + pcm[i1 * 2 + ch] * t;
+                            pcm480[i * 2 + ch] = (short)Math.Clamp(v * 32767 * _mixer.SpeakerVolume, -32768, 32767);
+                        }
+                    }
+                    if (_opus == null)
+                    {
+                        _opus = Concentus.OpusCodecFactory.CreateEncoder(48000, 2, Concentus.Enums.OpusApplication.OPUS_APPLICATION_AUDIO);
+                        _opus.Bitrate = 160000;
+                        _opus.UseVBR = false;
+                        _opus.Complexity = 0;
+                    }
+                    int len = _opus.Encode(pcm480, 480, opusOut, opusOut.Length);
+                    // Silence encodes to a few bytes; the controller expects exactly 200, so pad the packet the
+                    // Opus way (a valid padded packet) instead of appending raw zeros.
+                    if (len > 0 && len < 200) len = Concentus.Structs.OpusRepacketizer.PadPacket(opusOut, 0, len, 200) == 0 ? 200 : len;
+
+                    Array.Clear(report36);
+                    report36[0] = 0x36;
+                    report36[1] = (byte)(seq << 4);
+                    seq = (byte)((seq + 1) & 0x0F);
+                    report36[2] = 0x80 | 0x11; report36[3] = 7;
+                    report36[4] = 0xFE;
+                    for (int k = 5; k <= 9; k++) report36[k] = 0x40;
+                    report36[10] = counter++;
+                    report36[11] = 0x80 | 0x10; report36[12] = 63;
+                    var state = _btState?.Invoke();
+                    if (state != null) state.AsSpan(0, Math.Min(state.Length, 63)).CopyTo(report36.AsSpan(13));
+                    report36[76] = 0x80 | 0x12; report36[77] = 64;
+                    for (int i = 0; i < BtFramesPerReport; i++)
+                    {
+                        report36[78 + i * 2] = (byte)(sbyte)Math.Clamp(frames[i * 4 + 2] * 127f, -127f, 127f);
+                        report36[79 + i * 2] = (byte)(sbyte)Math.Clamp(frames[i * 4 + 3] * 127f, -127f, 127f);
+                    }
+                    report36[142] = (byte)(0x80 | (_mixer.SpeakerToHeadset ? 0x16 : 0x13)); report36[143] = 200;
+                    opusOut.AsSpan(0, Math.Min(len, 200)).CopyTo(report36.AsSpan(144));
+                    uint crc36 = Protocol.Crc32.Compute(0xA2, report36.AsSpan(0, Bt36Size - 4));
+                    System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(report36.AsSpan(Bt36Size - 4), crc36);
+                    try { _btWrite!(report36); } catch { }
+                    goto wait;
+                }
                 Array.Clear(report);
                 report[0] = 0x32;
                 report[1] = (byte)(seq << 4);
@@ -106,11 +221,13 @@ public sealed class HapticsEngine : IDisposable
                 System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(report.AsSpan(BtReportSize - 4), crc);
                 try { _btWrite!(report); } catch { /* controller asleep or link busy: drop this block */ }
 
+            wait:
+
                 next += period;
                 // Sleep only (1 ms timer resolution): busy-waiting for sub-ms precision cost ~10% of a CPU core,
                 // and the controller buffers enough that ±1 ms of jitter is not noticeable.
                 double wait = next - clock.Elapsed.TotalMilliseconds;
-                if (wait >= 1) Thread.Sleep((int)Math.Round(wait));
+                if (wait > 0) PreciseSleep(wait);
                 if (clock.Elapsed.TotalMilliseconds - next > 100) next = clock.Elapsed.TotalMilliseconds; // resync after a stall
             }
         }
@@ -191,7 +308,6 @@ public sealed class HapticsEngine : IDisposable
         _mixer.UseAudioHaptics = mode is HapticsMode.AudioToHaptics or HapticsMode.Both;
         _mixer.Gain = (float)Math.Clamp(gain, 0, 4);
         SpeakerError = null;
-        if (speaker && IsBluetooth) { speaker = false; SpeakerError = "o som pelo controle só funciona com o cabo USB"; }
         if (speaker && DefaultOutputIsThisController()) { speaker = false; SpeakerError = "o próprio controle já é a saída de som padrão do Windows"; }
         _mixer.Speaker = speaker;
         _mixer.SpeakerVolume = (float)Math.Clamp(speakerVolume, 0, 1);
@@ -243,10 +359,18 @@ public sealed class HapticsEngine : IDisposable
         _loopBuffer = new BufferedWaveProvider(_loopback.WaveFormat)
         {
             DiscardOnBufferOverflow = true,
-            BufferDuration = TimeSpan.FromMilliseconds(200),
+            BufferDuration = TimeSpan.FromMilliseconds(400),
         };
         _loopback.DataAvailable += (_, e) => _loopBuffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
         ISampleProvider src = new StereoMixer(_loopBuffer.ToSampleProvider());
+        if (IsBluetooth)
+        {
+            // Bluetooth: one 48 kHz stereo stream feeds both the Opus speaker frames and the haptics (decimated).
+            _speakerSrc = src.WaveFormat.SampleRate == 48000 ? src : new WdlResamplingSampleProvider(src, 48000);
+            _btLowPass = BiQuadFilter.LowPassFilter(48000, Math.Clamp(lowPassHz, 40, 1000), 0.707f);
+            _loopback.StartRecording();
+            return;
+        }
         if (src.WaveFormat.SampleRate != _mixer.WaveFormat.SampleRate)
             src = new WdlResamplingSampleProvider(src, _mixer.WaveFormat.SampleRate);
         _mixer.AudioSource = src;
@@ -257,6 +381,7 @@ public sealed class HapticsEngine : IDisposable
     private void StopLoopback()
     {
         _mixer.AudioSource = null;
+        _speakerSrc = null;
         try { _loopback?.StopRecording(); } catch { }
         _loopback?.Dispose();
         _loopback = null;
@@ -331,6 +456,7 @@ public sealed class HapticsEngine : IDisposable
         public bool UseAudioHaptics { get; set; }
         public bool Speaker { get; set; }
         public float SpeakerVolume { get; set; } = 1f;
+        public bool SpeakerToHeadset { get; set; }
         public float Gain { get; set; } = 1f;
         public ISampleProvider? AudioSource { get; set; }
         private ISampleProvider? _file;

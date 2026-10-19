@@ -3,7 +3,7 @@
   <!-- Builds AuroraPad-<version>-win-x64.msi from the single-file publish in ..\artifacts\app.
        Build with: dotnet build installer -c Release -p:AppVersion=1.2.0 -->
   <PropertyGroup>
-    <AppVersion Condition="'$(AppVersion)' == ''">1.3.0</AppVersion>
+    <AppVersion Condition="'$(AppVersion)' == ''">1.4.0</AppVersion>
     <OutputName>AuroraPad-$(AppVersion)-win-x64</OutputName>
     <InstallerPlatform>x64</InstallerPlatform>
     <Cultures>pt-BR</Cultures>
