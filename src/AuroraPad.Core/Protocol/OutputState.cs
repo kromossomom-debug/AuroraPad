@@ -23,6 +23,12 @@ public sealed class OutputState
     /// <summary>Bluetooth audio: route the controller's audio path to the speaker (or headset jack).</summary>
     public bool SpeakerEnabled { get; set; }
     public bool SpeakerToHeadset { get; set; }
+
+    /// <summary>
+    /// Audio-driven haptics are playing (USB sound card or Bluetooth 0x32/0x36). The HAPTICS_SELECT flag must
+    /// then be cleared, otherwise the firmware drives the actuators from the classic rumble values only.
+    /// </summary>
+    public bool AudioHapticsActive { get; set; }
     /// <summary>0-100.</summary>
     public int SpeakerVolume { get; set; } = 80;
 
@@ -106,6 +112,8 @@ public static class OutputReportBuilder
         common[44] = s.LightbarR;
         common[45] = s.LightbarG;
         common[46] = s.LightbarB;
+
+        if (s.AudioHapticsActive) common[0] = (byte)(common[0] & ~HapticsSelect);
 
         // Bluetooth speaker: enable the audio path (valid_flag0 0x20 speaker volume | 0x80 audio control,
         // valid_flag1 0x80 audio control 2), speaker volume, path select and preamp gain.

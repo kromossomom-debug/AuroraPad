@@ -55,7 +55,7 @@ internal static class Strings
         ["rumble.test"] = "Testar motores", ["rumble.large"] = "Motor esquerdo (forte)", ["rumble.small"] = "Motor direito (fraco)",
         ["hap.title"] = "Hápticos HD (DualSense por USB ou Bluetooth)",
         ["hap.hint"] = "Usa os atuadores de alta definição do DualSense: pela placa de som dele no cabo USB, ou por um fluxo próprio de 3 kHz no Bluetooth. Pode converter a vibração dos jogos ou o som do PC em hápticos.",
-        ["hap.source"] = "Origem", ["hap.gain"] = "Ganho (%)", ["hap.lowpass"] = "Filtro passa-baixa (Hz)",
+        ["hap.level"] = "Nível ao vivo", ["hap.source"] = "Origem", ["hap.gain"] = "Ganho (%)", ["hap.lowpass"] = "Filtro passa-baixa (Hz)",
         ["hap.replace"] = "Desligar a vibração clássica quando a vibração for para os hápticos",
         ["hap.off"] = "Desativado", ["hap.rumble"] = "Vibração do jogo → hápticos", ["hap.audio"] = "Som do PC → hápticos", ["hap.both"] = "Vibração do jogo + som do PC",
 
@@ -221,7 +221,7 @@ internal static class Strings
         ["rumble.test"] = "Test motors", ["rumble.large"] = "Left motor (strong)", ["rumble.small"] = "Right motor (weak)",
         ["hap.title"] = "HD haptics (DualSense over USB or Bluetooth)",
         ["hap.hint"] = "Drives the DualSense's high-definition actuators: through its sound card over USB, or a 3 kHz stream of HID reports over Bluetooth. It can turn game rumble or PC audio into haptics.",
-        ["hap.source"] = "Source", ["hap.gain"] = "Gain (%)", ["hap.lowpass"] = "Low-pass filter (Hz)",
+        ["hap.level"] = "Live level", ["hap.source"] = "Source", ["hap.gain"] = "Gain (%)", ["hap.lowpass"] = "Low-pass filter (Hz)",
         ["hap.replace"] = "Turn off classic rumble when rumble goes to the haptics",
         ["hap.off"] = "Off", ["hap.rumble"] = "Game rumble → haptics", ["hap.audio"] = "PC audio → haptics", ["hap.both"] = "Game rumble + PC audio",
 
@@ -387,7 +387,7 @@ internal static class Strings
         ["rumble.test"] = "Probar motores", ["rumble.large"] = "Motor izquierdo (fuerte)", ["rumble.small"] = "Motor derecho (débil)",
         ["hap.title"] = "Hápticos HD (DualSense por USB o Bluetooth)",
         ["hap.hint"] = "Usa los actuadores de alta definición del DualSense: por su tarjeta de sonido con USB, o con un flujo propio de 3 kHz por Bluetooth. Puede convertir la vibración de los juegos o el sonido del PC en hápticos.",
-        ["hap.source"] = "Origen", ["hap.gain"] = "Ganancia (%)", ["hap.lowpass"] = "Filtro paso bajo (Hz)",
+        ["hap.level"] = "Nivel en vivo", ["hap.source"] = "Origen", ["hap.gain"] = "Ganancia (%)", ["hap.lowpass"] = "Filtro paso bajo (Hz)",
         ["hap.replace"] = "Apagar la vibración clásica cuando la vibración vaya a los hápticos",
         ["hap.off"] = "Desactivado", ["hap.rumble"] = "Vibración del juego → hápticos", ["hap.audio"] = "Sonido del PC → hápticos", ["hap.both"] = "Vibración del juego + sonido del PC",
 

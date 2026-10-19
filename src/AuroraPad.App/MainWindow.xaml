@@ -148,10 +148,10 @@
                             <ColumnDefinition Width="220" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Border Background="#FF111317">
+                        <Border Background="{StaticResource SidebarBrush}" BorderBrush="#FF1C202A" BorderThickness="0,0,1,0">
                             <DockPanel>
                                 <StackPanel DockPanel.Dock="Top" Margin="22,22,12,18">
-                                    <TextBlock Text="AuroraPad" FontSize="20" FontWeight="Bold" />
+                                    <TextBlock Text="AuroraPad" FontSize="22" FontWeight="Bold" Foreground="{StaticResource AuroraBrush}" />
                                     <TextBlock Text="{l:T app.subtitle}" Style="{StaticResource Dim}" />
                                 </StackPanel>
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -165,7 +165,7 @@
             </TabControl.Template>
 
             <!-- ================= HOME ================= -->
-            <TabItem Header="{l:T nav.home}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.home}" Tag="&#xE80F;" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28">
                         <TextBlock Style="{StaticResource H1}" Text="{l:T home.title}" />
@@ -224,7 +224,7 @@
             </TabItem>
 
             <!-- ================= LIVE INPUT ================= -->
-            <TabItem Header="{l:T nav.live}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.live}" Tag="&#xE7FC;" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28">
                         <DockPanel Margin="0,0,0,16">
@@ -345,7 +345,7 @@
             </TabItem>
 
             <!-- ================= ADAPTIVE TRIGGERS ================= -->
-            <TabItem Header="{l:T nav.triggers}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.triggers}" Tag="&#xE945;" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28">
                         <TextBlock Style="{StaticResource H1}" Text="{l:T trg.title}" />
@@ -360,7 +360,7 @@
             </TabItem>
 
             <!-- ================= LIGHTING ================= -->
-            <TabItem Header="{l:T nav.lighting}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.lighting}" Tag="&#xE781;" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28">
                         <TextBlock Style="{StaticResource H1}" Text="{l:T light.title}" />
@@ -454,7 +454,7 @@
             </TabItem>
 
             <!-- ================= RUMBLE & HAPTICS ================= -->
-            <TabItem Header="{l:T nav.rumble}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.rumble}" Tag="&#xE877;" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28">
                         <TextBlock Style="{StaticResource H1}" Text="{l:T rumble.title}" />
@@ -493,6 +493,10 @@
                                     <TextBlock Text="{Binding HapticsFileStatus}" Style="{StaticResource Dim}" VerticalAlignment="Center" />
                                 </WrapPanel>
                                 <TextBlock Text="{Binding HapticsStatus}" Style="{StaticResource Dim}" Margin="0,6,0,0" />
+                                <DockPanel Margin="0,8,0,0">
+                                    <TextBlock Style="{StaticResource RowLabel}" Text="{l:T hap.level}" />
+                                    <ProgressBar Value="{Binding HapticsLevel, Mode=OneWay}" Maximum="1" Height="8" />
+                                </DockPanel>
                             </StackPanel>
                         </Border>
                         <Border Style="{StaticResource Card}">
@@ -543,7 +547,7 @@
             </TabItem>
 
             <!-- ================= STICKS ================= -->
-            <TabItem Header="{l:T nav.sticks}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.sticks}" Tag="&#xE7FC;" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28">
                         <TextBlock Style="{StaticResource H1}" Text="{l:T stick.title}" />
@@ -600,7 +604,7 @@
             </TabItem>
 
             <!-- ================= KEYBOARD, MOUSE, MACROS ================= -->
-            <TabItem Header="{l:T nav.km}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.km}" Tag="&#xE765;" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28">
                         <TextBlock Style="{StaticResource H1}" Text="{l:T km.title}" />
@@ -793,7 +797,7 @@
             </TabItem>
 
             <!-- ================= PROFILES ================= -->
-            <TabItem Header="{l:T nav.profiles}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.profiles}" Tag="&#xE77B;" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28">
                         <TextBlock Style="{StaticResource H1}" Text="{l:T prof.title}" />
@@ -836,7 +840,7 @@
             </TabItem>
 
             <!-- ================= GAME LIBRARY ================= -->
-            <TabItem Header="{l:T nav.library}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.library}" Tag="&#xE8F1;" Style="{StaticResource NavTab}">
                 <DockPanel Margin="28">
                     <TextBlock DockPanel.Dock="Top" Style="{StaticResource H1}" Text="{l:T lib.title}" />
                     <TextBlock DockPanel.Dock="Top" Style="{StaticResource Dim}" Margin="0,0,0,10" Text="{l:T lib.hint}" />
@@ -847,7 +851,7 @@
                         <TextBox Text="{Binding LibraryFilter, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="8,0,0,0" ToolTip="{l:T lib.filter}" />
                     </WrapPanel>
                     <TextBlock DockPanel.Dock="Bottom" Text="{Binding LibraryStatus}" Style="{StaticResource Dim}" Margin="0,8,0,0" />
-                    <ListView ItemsSource="{Binding LibraryView}" SelectedItem="{Binding SelectedLibraryGame}" Background="#FF2A2E36" Foreground="{StaticResource Fg}" BorderBrush="{StaticResource PanelBorder}">
+                    <ListView ItemsSource="{Binding LibraryView}" SelectedItem="{Binding SelectedLibraryGame}" Background="{StaticResource Panel}" Foreground="{StaticResource Fg}" BorderBrush="{StaticResource PanelBorder}">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="{l:T lib.name}" Width="300" DisplayMemberBinding="{Binding Name}" />
@@ -860,7 +864,7 @@
             </TabItem>
 
             <!-- ================= EMULATION & MODS ================= -->
-            <TabItem Header="{l:T nav.emulation}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.emulation}" Tag="&#xE703;" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28">
                         <TextBlock Style="{StaticResource H1}" Text="{l:T emu.title}" />
@@ -930,7 +934,7 @@
             </TabItem>
 
             <!-- ================= GUIDE ================= -->
-            <TabItem Header="{l:T nav.guide}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.guide}" Tag="&#xE897;" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28">
                         <TextBlock Style="{StaticResource H1}" Text="{l:T guide.title}" />
@@ -950,7 +954,7 @@
                 </ScrollViewer>
             </TabItem>
             <!-- ================= SETTINGS ================= -->
-            <TabItem Header="{l:T nav.settings}" Style="{StaticResource NavTab}">
+            <TabItem Header="{l:T nav.settings}" Tag="&#xE713;" Style="{StaticResource NavTab}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28">
                         <TextBlock Style="{StaticResource H1}" Text="{l:T set.title}" />

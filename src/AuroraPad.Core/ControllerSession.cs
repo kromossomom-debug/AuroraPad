@@ -28,6 +28,8 @@ public sealed class ControllerSession : IDisposable
 
     public string? HapticsError { get; private set; }
     public string? HapticsDevice => _haptics?.DeviceName;
+    /// <summary>Peak level (0-1) of the haptic signal sent in the last moment, for the UI meter.</summary>
+    public double HapticsLevel => _haptics?.Level ?? 0;
     /// <summary>Why the PC-audio mirror to the controller is not playing (null = playing or off).</summary>
     public string? SpeakerError { get; private set; }
     private (byte R, byte G, byte B)? _gameLightbar;
@@ -392,6 +394,7 @@ public sealed class ControllerSession : IDisposable
             SpeakerError = p.SpeakerFromPc ? "o DualShock 4 não tem saída de áudio pelo app" : null;
             _haptics?.Dispose();
             _haptics = null;
+            if (Device.Output.AudioHapticsActive || Device.Output.SpeakerEnabled) { Device.Output.AudioHapticsActive = false; Device.Output.SpeakerEnabled = false; Device.MarkOutputDirty(); }
             HapticsError = p.HapticsMode == Haptics.HapticsMode.Off ? null : "o DualShock 4 não tem hápticos";
             return;
         }
@@ -409,6 +412,8 @@ public sealed class ControllerSession : IDisposable
         SpeakerError = p.SpeakerFromPc ? _haptics.SpeakerError : null;
         // Bluetooth: the state reports must also switch the controller's audio path to the speaker.
         bool btSpeaker = Device.Connection == ConnectionType.Bluetooth && p.SpeakerFromPc && SpeakerError == null;
+        bool audioHaptics = p.HapticsMode != Haptics.HapticsMode.Off;
+        if (Device.Output.AudioHapticsActive != audioHaptics) { Device.Output.AudioHapticsActive = audioHaptics; Device.MarkOutputDirty(); }
         if (Device.Output.SpeakerEnabled != btSpeaker)
         {
             Device.Output.SpeakerEnabled = btSpeaker;

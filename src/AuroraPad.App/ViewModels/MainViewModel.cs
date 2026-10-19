@@ -109,6 +109,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private int _hapticsLowPassHz;
     [ObservableProperty] private bool _hapticsReplaceRumble;
     [ObservableProperty] private string _hapticsStatus = "";
+    [ObservableProperty] private double _hapticsLevel;
 
     // Sticks
     [ObservableProperty] private double _leftDeadzone, _rightDeadzone, _leftAntiDeadzone, _rightAntiDeadzone;
@@ -297,6 +298,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var live = SelectedController?.Session.Device.Input;
         LeftTrigger.SetLive(live?.L2 ?? 0);
         RightTrigger.SetLive(live?.R2 ?? 0);
+        double level = Math.Round(Math.Min(1, SelectedController?.Session.HapticsLevel ?? 0), 2);
+        if (level != HapticsLevel) HapticsLevel = level;
         if (!Diag) return;
         double t1 = _diagClock.Elapsed.TotalMilliseconds;
         if (_diagLast > 0) { double d = t0 - _diagLast; _diagSum += d; _diagMax = Math.Max(_diagMax, d); _diagCount++; }

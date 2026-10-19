@@ -48,6 +48,9 @@ public sealed class HapticsEngine : IDisposable
 
     public string MixFormatDescription { get; }
 
+    /// <summary>Peak of the haptic signal (0-1), decaying; shows whether anything is actually being sent.</summary>
+    public double Level => _mixer.Level;
+
     /// <summary>True when this engine streams over Bluetooth HID instead of the USB sound card.</summary>
     public bool IsBluetooth => _btWrite != null;
 
@@ -155,6 +158,10 @@ public sealed class HapticsEngine : IDisposable
                     }
                     speakerOn = _mixer.Speaker;
                 }
+
+                float peak = 0;
+                for (int i = 0; i < BtFramesPerReport; i++) peak = Math.Max(peak, Math.Max(Math.Abs(frames[i * 4 + 2]), Math.Abs(frames[i * 4 + 3])));
+                _mixer.ReportLevel(peak);
 
                 if (speakerOn)
                 {
@@ -457,6 +464,9 @@ public sealed class HapticsEngine : IDisposable
         public bool Speaker { get; set; }
         public float SpeakerVolume { get; set; } = 1f;
         public bool SpeakerToHeadset { get; set; }
+        private float _level;
+        public double Level => _level;
+        public void ReportLevel(float peak) => _level = Math.Max(peak, _level * 0.9f);
         public float Gain { get; set; } = 1f;
         public ISampleProvider? AudioSource { get; set; }
         private ISampleProvider? _file;
@@ -534,10 +544,12 @@ public sealed class HapticsEngine : IDisposable
                         if (Speaker) { buffer[b] = l * SpeakerVolume; buffer[b + 1] = r * SpeakerVolume; } // speaker / headset
                     }
                     h = Math.Clamp(h * Gain, -1f, 1f);
+                    if (Math.Abs(h) > _level) _level = Math.Abs(h);
                     buffer[b + 2] = h; // left actuator
                     buffer[b + 3] = h; // right actuator
                 }
             }
+            _level *= 0.9f;
             return frames * _channels;
         }
     }

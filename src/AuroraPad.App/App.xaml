@@ -3,16 +3,31 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <Color x:Key="BgColor">#FF15171C</Color>
-        <Color x:Key="PanelColor">#FF1E2128</Color>
-        <Color x:Key="AccentColor">#FF0078D4</Color>
+        <!-- ===== Palette ("aurora": teal -> blue -> violet, as in the app icon) ===== -->
+        <Color x:Key="BgColor">#FF0F1117</Color>
+        <Color x:Key="PanelColor">#FF181B23</Color>
+        <Color x:Key="AccentColor">#FF2E8BFF</Color>
         <SolidColorBrush x:Key="Bg" Color="{StaticResource BgColor}" />
         <SolidColorBrush x:Key="Panel" Color="{StaticResource PanelColor}" />
-        <SolidColorBrush x:Key="PanelBorder" Color="#FF2C3039" />
+        <SolidColorBrush x:Key="PanelHi" Color="#FF20242E" />
+        <SolidColorBrush x:Key="PanelBorder" Color="#FF262B36" />
         <SolidColorBrush x:Key="Accent" Color="{StaticResource AccentColor}" />
-        <SolidColorBrush x:Key="Fg" Color="#FFE8EAED" />
-        <SolidColorBrush x:Key="FgDim" Color="#FF9AA0A6" />
-        <SolidColorBrush x:Key="Off" Color="#FF3A3F4A" />
+        <SolidColorBrush x:Key="Fg" Color="#FFEDEFF4" />
+        <SolidColorBrush x:Key="FgDim" Color="#FF9AA3B2" />
+        <SolidColorBrush x:Key="Off" Color="#FF323846" />
+        <LinearGradientBrush x:Key="AuroraBrush" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#FF00D6AA" Offset="0" />
+            <GradientStop Color="#FF2E8BFF" Offset="0.55" />
+            <GradientStop Color="#FF7C3AED" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="SidebarBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FF0B0D12" Offset="0" />
+            <GradientStop Color="#FF10131B" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="CardBorderBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#FF2C3240" Offset="0" />
+            <GradientStop Color="#FF1F232D" Offset="1" />
+        </LinearGradientBrush>
 
         <!-- No Foreground here: an app-wide implicit TextBlock style also reaches text inside
              control templates (e.g. ComboBox), which would make it light-on-light.
@@ -22,9 +37,9 @@
         </Style>
         <Style x:Key="H1" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource Fg}" />
-            <Setter Property="FontSize" Value="24" />
+            <Setter Property="FontSize" Value="26" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0,0,0,16" />
+            <Setter Property="Margin" Value="0,0,0,18" />
         </Style>
         <Style x:Key="H2" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource Fg}" />
@@ -39,28 +54,33 @@
         </Style>
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource Panel}" />
-            <Setter Property="BorderBrush" Value="{StaticResource PanelBorder}" />
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="16" />
-            <Setter Property="Margin" Value="0,0,0,12" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Margin" Value="0,0,0,14" />
         </Style>
 
+        <!-- ===== Buttons: gradient primary, quiet secondary ===== -->
         <Style TargetType="Button">
             <Setter Property="Foreground" Value="White" />
-            <Setter Property="Background" Value="{StaticResource Accent}" />
-            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="Background" Value="{StaticResource AuroraBrush}" />
+            <Setter Property="Padding" Value="16,7" />
             <Setter Property="Margin" Value="0,0,8,6" />
+            <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="b" Property="Opacity" Value="0.85" />
+                                <Setter TargetName="b" Property="Opacity" Value="0.88" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="b" Property="Opacity" Value="0.72" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="b" Property="Opacity" Value="0.4" />
@@ -71,54 +91,319 @@
             </Setter>
         </Style>
         <Style x:Key="Secondary" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="#FF2F343E" />
+            <Setter Property="Background" Value="#FF262B36" />
+            <Setter Property="FontWeight" Value="Normal" />
         </Style>
 
+        <!-- ===== Toggle switch (all CheckBoxes) ===== -->
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="{StaticResource Fg}" />
-            <Setter Property="Margin" Value="0,4,16,4" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <!-- Long labels wrap instead of being cut off on narrow windows. -->
+            <Setter Property="Margin" Value="0,5,18,5" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="ContentTemplate">
                 <Setter.Value>
                     <DataTemplate>
-                        <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding}" TextWrapping="Wrap" VerticalAlignment="Center" />
                     </DataTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="track" Width="38" Height="20" CornerRadius="10" Background="{StaticResource Off}" VerticalAlignment="Center">
+                                <Ellipse x:Name="knob" Width="14" Height="14" Fill="#FFB8C0CC" HorizontalAlignment="Left" Margin="3,0,0,0" />
+                            </Border>
+                            <ContentPresenter Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="track" Property="Background" Value="{StaticResource AuroraBrush}" />
+                                <Setter TargetName="knob" Property="Fill" Value="White" />
+                                <Setter TargetName="knob" Property="HorizontalAlignment" Value="Right" />
+                                <Setter TargetName="knob" Property="Margin" Value="0,0,3,0" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== Slider: gradient-filled track, round thumb ===== -->
+        <Style x:Key="SliderRepeat" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Background="Transparent" />
+                    </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
         <Style TargetType="Slider">
             <Setter Property="IsSnapToTickEnabled" Value="True" />
             <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#FF2A2E36" />
-            <Setter Property="Foreground" Value="{StaticResource Fg}" />
-            <Setter Property="BorderBrush" Value="{StaticResource PanelBorder}" />
-            <Setter Property="Padding" Value="6,4" />
-            <Setter Property="CaretBrush" Value="White" />
-        </Style>
-        <Style TargetType="ComboBox">
-            <Setter Property="Padding" Value="6,4" />
-            <Setter Property="MinWidth" Value="200" />
-        </Style>
-
-        <!-- Navigation tabs on the left -->
-        <Style x:Key="NavTab" TargetType="TabItem">
-            <Setter Property="Foreground" Value="{StaticResource FgDim}" />
-            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="b" Background="Transparent" CornerRadius="6" Padding="14,10" Margin="8,2">
-                            <ContentPresenter ContentSource="Header" />
+                    <ControlTemplate TargetType="Slider">
+                        <Grid Height="22">
+                            <Border Height="5" CornerRadius="3" Background="{StaticResource Off}" VerticalAlignment="Center" />
+                            <Track x:Name="PART_Track" VerticalAlignment="Center">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="5" CornerRadius="3" Background="{StaticResource AuroraBrush}" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge" Style="{StaticResource SliderRepeat}" />
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Ellipse Width="16" Height="16" Fill="White" Stroke="{StaticResource Accent}" StrokeThickness="2" />
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#FF1F232C" />
+            <Setter Property="Foreground" Value="{StaticResource Fg}" />
+            <Setter Property="BorderBrush" Value="{StaticResource PanelBorder}" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="CaretBrush" Value="White" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Accent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== Dark ComboBox ===== -->
+        <Style x:Key="ComboToggle" TargetType="ToggleButton">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="b" Background="#FF1F232C" BorderBrush="{StaticResource PanelBorder}" BorderThickness="1" CornerRadius="8">
+                            <Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0"
+                                  Data="M 0,0 L 5,5 L 10,0" Stroke="{StaticResource FgDim}" StrokeThickness="1.6" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="b" Property="Background" Value="#FF252932" />
+                                <Setter TargetName="b" Property="BorderBrush" Value="#FF3A4252" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Accent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="MinWidth" Value="200" />
+            <Setter Property="Foreground" Value="{StaticResource Fg}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid MinHeight="34">
+                            <ToggleButton Style="{StaticResource ComboToggle}"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                            <ContentPresenter IsHitTestVisible="False" Margin="12,0,30,0" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              TextElement.Foreground="{StaticResource Fg}" />
+                            <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                                <Border Background="#FF1B1F28" BorderBrush="#FF323846" BorderThickness="1" CornerRadius="10" Margin="0,4,0,0"
+                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <ScrollViewer Margin="4" VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" TextElement.Foreground="{StaticResource Fg}" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{StaticResource Fg}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="b" Background="Transparent" CornerRadius="6" Padding="10,7">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#FF2A3040" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="b" Property="Background" Value="#FF2B3140" />
+                                <Setter TargetName="b" Property="Background" Value="#FF233A5E" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="GridViewColumnHeader">
+            <Setter Property="Foreground" Value="{StaticResource FgDim}" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GridViewColumnHeader">
+                        <Border Background="#FF1B1F28" BorderBrush="{StaticResource PanelBorder}" BorderThickness="0,0,1,1" Padding="10,8">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ListViewItem">
+            <Setter Property="Foreground" Value="{StaticResource Fg}" />
+            <Setter Property="Padding" Value="4,5" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#FF222734" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ===== Slim scrollbars ===== -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="10" />
+            <Setter Property="MinWidth" Value="10" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Border Background="#FF3A4150" CornerRadius="4" Margin="2" />
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageUpCommand" Style="{StaticResource SliderRepeat}" />
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageDownCommand" Style="{StaticResource SliderRepeat}" />
+                            </Track.IncreaseRepeatButton>
+                        </Track>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="Orientation" Value="Horizontal">
+                    <Setter Property="Width" Value="Auto" />
+                    <Setter Property="Height" Value="10" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ScrollBar">
+                                <Track x:Name="PART_Track">
+                                    <Track.Thumb>
+                                        <Thumb>
+                                            <Thumb.Template>
+                                                <ControlTemplate TargetType="Thumb">
+                                                    <Border Background="#FF3A4150" CornerRadius="4" Margin="2" />
+                                                </ControlTemplate>
+                                            </Thumb.Template>
+                                        </Thumb>
+                                    </Track.Thumb>
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Command="ScrollBar.PageLeftCommand" Style="{StaticResource SliderRepeat}" />
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Command="ScrollBar.PageRightCommand" Style="{StaticResource SliderRepeat}" />
+                                    </Track.IncreaseRepeatButton>
+                                </Track>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="ProgressBar">
+            <Setter Property="Background" Value="{StaticResource Off}" />
+            <Setter Property="Foreground" Value="{StaticResource AuroraBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4" ClipToBounds="True">
+                            <Grid>
+                                <Border x:Name="PART_Track" />
+                                <Border x:Name="PART_Indicator" HorizontalAlignment="Left" Background="{TemplateBinding Foreground}" CornerRadius="4" />
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== Navigation (left): icon glyph from Tag, accent bar when selected ===== -->
+        <Style x:Key="NavTab" TargetType="TabItem">
+            <Setter Property="Foreground" Value="{StaticResource FgDim}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Grid Margin="10,2">
+                            <Border x:Name="b" Background="Transparent" CornerRadius="10" Padding="12,10">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="icon" Text="{TemplateBinding Tag}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                               FontSize="16" Width="22" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <Border x:Name="bar" Width="3" CornerRadius="2" HorizontalAlignment="Left" Margin="0,9" Background="{StaticResource AuroraBrush}" Visibility="Collapsed" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#FF181C25" />
+                                <Setter Property="Foreground" Value="{StaticResource Fg}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#FF1C2230" />
+                                <Setter TargetName="bar" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="icon" Property="Foreground" Value="#FF4FB6FF" />
                                 <Setter Property="Foreground" Value="White" />
                             </Trigger>
                         </ControlTemplate.Triggers>
