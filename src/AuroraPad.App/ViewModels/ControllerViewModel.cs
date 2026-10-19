@@ -39,6 +39,7 @@ public sealed partial class ControllerViewModel : ObservableObject
     [ObservableProperty] private double _l2Height, _r2Height;
     [ObservableProperty] private double _t1Left, _t1Top, _t2Left, _t2Top;
     [ObservableProperty] private bool _led1On, _led2On, _led3On, _led4On, _led5On, _micOn;
+    [ObservableProperty] private bool _touchpadMouseOn;
     [ObservableProperty] private System.Windows.Media.Brush _lightbarBrush = System.Windows.Media.Brushes.Black;
     [ObservableProperty] private System.Windows.Media.Color _lightbarColor;
     public bool IsDualShock4 => Session.Device.IsDualShock4;
@@ -68,12 +69,13 @@ public sealed partial class ControllerViewModel : ObservableObject
         byte leds = IsDualSense ? o.PlayerLeds : (byte)0;
         Led1On = (leds & 1) != 0; Led2On = (leds & 2) != 0; Led3On = (leds & 4) != 0; Led4On = (leds & 8) != 0; Led5On = (leds & 16) != 0;
         MicOn = IsDualSense && o.MicLed != MicLedMode.Off;
+        TouchpadMouseOn = Session.TouchpadMouseActive;
     }
 
-    public void Refresh()
+    /// <summary>Battery and status labels; cheap but not needed every frame.</summary>
+    public void RefreshStatus()
     {
         var i = Session.Device.Input;
-        RefreshIllustration(i);
         Battery = i.BatteryPercent;
         BatteryLabel = i.Charging switch
         {
@@ -88,6 +90,13 @@ public sealed partial class ControllerViewModel : ObservableObject
         if (!Session.MappingEnabled) EmulationLabel += "  •  " + L.T("ctl.kmPaused");
         HapticsLabel = Session.HapticsDevice != null ? L.F("ctl.haptics", Session.HapticsDevice)
             : Session.HapticsError != null ? L.F("ctl.hapticsError", Session.HapticsError) : "";
+    }
+
+    /// <summary>Live input for the drawing and the input page; called every rendered frame.</summary>
+    public void Refresh()
+    {
+        var i = Session.Device.Input;
+        RefreshIllustration(i);
 
         // Stick dots move inside a 100x100 box.
         LeftX = i.LeftX / 255.0 * 100; LeftY = i.LeftY / 255.0 * 100;

@@ -22,6 +22,8 @@ public sealed partial class MappingRowViewModel : ObservableObject
         new(DualSenseButtons.Square, L.T("btn.square")), new(DualSenseButtons.Triangle, L.T("btn.triangle")),
         new(DualSenseButtons.L1, "L1"), new(DualSenseButtons.R1, "R1"),
         new(DualSenseButtons.L2, L.T("btn.l2")), new(DualSenseButtons.R2, L.T("btn.r2")),
+        new(DualSenseButtons.L2Half, L.T("btn.l2half")), new(DualSenseButtons.L2Full, L.T("btn.l2full")),
+        new(DualSenseButtons.R2Half, L.T("btn.r2half")), new(DualSenseButtons.R2Full, L.T("btn.r2full")),
         new(DualSenseButtons.L3, "L3"), new(DualSenseButtons.R3, "R3"),
         new(DualSenseButtons.DPadUp, L.T("btn.up")), new(DualSenseButtons.DPadDown, L.T("btn.down")),
         new(DualSenseButtons.DPadLeft, L.T("btn.left")), new(DualSenseButtons.DPadRight, L.T("btn.right")),
@@ -44,6 +46,17 @@ public sealed partial class MappingRowViewModel : ObservableObject
 
     public static IReadOnlyList<KeyCatalog.KeyEntry> Keys => KeyCatalog.Keys;
 
+    public static IReadOnlyList<Option<PressActivator>> Activators { get; } =
+    [
+        new(PressActivator.Press, L.T("act.press")), new(PressActivator.Tap, L.T("act.tap")),
+        new(PressActivator.DoubleTap, L.T("act.double")), new(PressActivator.LongPress, L.T("act.long")),
+    ];
+
+    /// <summary>Synthetic trigger-stage buttons cannot be turbo'd or used as activation buttons.</summary>
+    public static bool IsPhysical(DualSenseButtons b) =>
+        (b & (DualSenseButtons.L2Half | DualSenseButtons.L2Full | DualSenseButtons.R2Half | DualSenseButtons.R2Full)) == 0;
+
+    public int Layer { get; set; }
     public DualSenseButtons Button { get; }
     public string Label { get; }
 
@@ -53,6 +66,10 @@ public sealed partial class MappingRowViewModel : ObservableObject
     [ObservableProperty] private string _macroText = "";
     [ObservableProperty] private bool _repeatWhileHeld;
     [ObservableProperty] private string _macroError = "";
+    [ObservableProperty] private Option<PressActivator> _activator = Activators[0];
+    [ObservableProperty] private bool _toggle;
+
+    public bool IsMapped => Target.Value != MappingTarget.None;
 
     public bool IsKeyboard => Target.Value == MappingTarget.Keyboard;
     public bool IsMacro => Target.Value == MappingTarget.Macro;
@@ -73,6 +90,8 @@ public sealed partial class MappingRowViewModel : ObservableObject
         KeepOnController = m?.KeepOnController ?? false;
         MacroText = m?.Macro ?? "";
         RepeatWhileHeld = m?.RepeatWhileHeld ?? false;
+        Activator = Activators.FirstOrDefault(a => a.Value == (m?.Activator ?? PressActivator.Press)) ?? Activators[0];
+        Toggle = m?.Toggle ?? false;
         Loading = false;
         ValidateMacro();
         RaiseVisibility();
@@ -86,6 +105,9 @@ public sealed partial class MappingRowViewModel : ObservableObject
         KeepOnController = KeepOnController,
         Macro = MacroText,
         RepeatWhileHeld = RepeatWhileHeld,
+        Activator = Activator.Value,
+        Toggle = Toggle,
+        Layer = Layer,
     };
 
     private void RaiseVisibility()
@@ -93,6 +115,7 @@ public sealed partial class MappingRowViewModel : ObservableObject
         OnPropertyChanged(nameof(IsKeyboard));
         OnPropertyChanged(nameof(IsMacro));
         OnPropertyChanged(nameof(HasMacroError));
+        OnPropertyChanged(nameof(IsMapped));
     }
 
     private void ValidateMacro()
@@ -111,6 +134,8 @@ public sealed partial class MappingRowViewModel : ObservableObject
     partial void OnKeyChanged(KeyCatalog.KeyEntry? value) { if (!Loading) _changed(); }
     partial void OnKeepOnControllerChanged(bool value) { if (!Loading) _changed(); }
     partial void OnRepeatWhileHeldChanged(bool value) { if (!Loading) _changed(); }
+    partial void OnActivatorChanged(Option<PressActivator> value) { if (!Loading) _changed(); }
+    partial void OnToggleChanged(bool value) { if (!Loading) _changed(); }
 
     partial void OnMacroTextChanged(string value)
     {

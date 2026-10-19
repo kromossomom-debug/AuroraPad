@@ -35,6 +35,11 @@ public enum DualSenseButtons : uint
     DPadDown = 1 << 20,
     DPadLeft = 1 << 21,
     DPadRight = 1 << 22,
+    // Synthetic two-stage trigger "buttons" (computed by the mapping engine, never sent by hardware).
+    L2Half = 1 << 23,
+    L2Full = 1 << 24,
+    R2Half = 1 << 25,
+    R2Full = 1 << 26,
 }
 
 public enum ChargingState : byte { Discharging = 0, Charging = 1, Full = 2, Unknown = 0xFF }

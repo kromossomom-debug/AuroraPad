@@ -2,10 +2,28 @@
 
 namespace AuroraPad.Core.Mapping;
 
+/// <summary>How the touchpad-as-mouse gets switched on.</summary>
+public enum TouchpadActivation
+{
+    /// <summary>Always works as a mouse.</summary>
+    AlwaysOn,
+    /// <summary>Two quick taps unlock it.</summary>
+    DoubleTap,
+    /// <summary>Resting a finger still for a moment unlocks it.</summary>
+    Hold,
+    /// <summary>Either a double tap or a hold unlocks it.</summary>
+    DoubleTapOrHold,
+}
+
 public sealed class TouchpadMouseSettings
 {
     /// <summary>Use the touchpad like a laptop trackpad.</summary>
     public bool Enabled { get; set; } = true;
+    public TouchpadActivation Activation { get; set; } = TouchpadActivation.DoubleTapOrHold;
+    /// <summary>How long a finger must rest to unlock (Hold modes), in ms.</summary>
+    public int HoldMs { get; set; } = 500;
+    /// <summary>Lock again after this many seconds without touching; 0 = stay unlocked.</summary>
+    public int AutoLockSeconds { get; set; } = 8;
     /// <summary>1-100.</summary>
     public double Sensitivity { get; set; } = 40;
     /// <summary>0-100: how much faster quick swipes move the cursor.</summary>
@@ -17,19 +35,22 @@ public sealed class TouchpadMouseSettings
     /// <summary>Two fingers dragging up/down scroll the page.</summary>
     public bool TwoFingerScroll { get; set; } = true;
     public bool InvertScroll { get; set; }
-    /// <summary>Also send the touchpad click to the virtual controller.</summary>
+    /// <summary>Also send the touchpad click to the virtual controller while the mouse is active.</summary>
     public bool KeepClickOnController { get; set; }
 }
 
 /// <summary>
 /// Laptop-style trackpad on the DualSense/DS4 touchpad (1920x1080 coordinate space):
 /// one finger moves, press clicks (right half = right click), tap clicks, two fingers scroll,
-/// two-finger tap or press = right click.
+/// two-finger tap or press = right click. Depending on <see cref="TouchpadActivation"/> it
+/// first has to be unlocked with a double tap or a resting finger, so games keep the touchpad
+/// until the player actually wants the mouse.
 /// </summary>
 public sealed class TouchpadMouse
 {
     private const double TapMaxSeconds = 0.18;
     private const int TapMaxTravel = 40;
+    private const double DoubleTapWindow = 0.35;
 
     private TouchPoint _last1, _last2;
     private double _remX, _remY, _scrollRem;
@@ -38,14 +59,88 @@ public sealed class TouchpadMouse
     private int _maxFingers;
     private MappingTarget? _heldButton;
 
-    public void Process(DualSenseInput i, TouchpadMouseSettings s, double now)
+    private bool _unlocked;
+    private double _lastActivity;
+    private double _lastTapEnd = double.NegativeInfinity;
+    private bool _ignoreUntilLift; // the gesture that unlocked must not also click or move
+
+    /// <summary>True while touches drive the mouse.</summary>
+    public bool IsActive { get; private set; }
+
+    /// <summary>Raised when the mouse switches on (true) or locks again (false).</summary>
+    public event Action<bool>? ActiveChanged;
+
+    /// <summary>Processes one report. Returns true when the touchpad is acting as a mouse.</summary>
+    public bool Process(DualSenseInput i, TouchpadMouseSettings s, double now)
     {
         var t1 = i.Touch1;
         var t2 = i.Touch2;
         int fingers = (t1.Active ? 1 : 0) + (t2.Active ? 1 : 0);
+        bool wasTouching = _last1.Active || _last2.Active;
+        bool pressed = (i.Buttons & DualSenseButtons.Touchpad) != 0;
+
+        // ---- Gesture bookkeeping (needed both locked and unlocked) ------------
+        if (fingers > 0 && !wasTouching)
+        {
+            _touchStart = now;
+            _travel = 0;
+            _maxFingers = fingers;
+        }
+        _maxFingers = Math.Max(_maxFingers, fingers);
+        if (fingers == 1 && t1.Active && _last1.Active && t1.Id == _last1.Id)
+            _travel += Math.Abs(t1.X - _last1.X) + Math.Abs(t1.Y - _last1.Y);
+        if (fingers > 0 || pressed) _lastActivity = now;
+
+        bool tapEnded = fingers == 0 && wasTouching && !pressed
+                        && now - _touchStart < TapMaxSeconds && _travel < TapMaxTravel;
+
+        // ---- Lock / unlock ------------------------------------------------------
+        if (s.Activation == TouchpadActivation.AlwaysOn)
+        {
+            SetActive(true);
+        }
+        else if (!_unlocked)
+        {
+            bool viaDoubleTap = s.Activation is TouchpadActivation.DoubleTap or TouchpadActivation.DoubleTapOrHold;
+            bool viaHold = s.Activation is TouchpadActivation.Hold or TouchpadActivation.DoubleTapOrHold;
+
+            if (tapEnded)
+            {
+                if (viaDoubleTap && now - _lastTapEnd < DoubleTapWindow)
+                {
+                    Unlock(now);
+                    _lastTapEnd = double.NegativeInfinity;
+                }
+                else _lastTapEnd = now;
+            }
+            if (viaHold && fingers == 1 && !pressed && now - _touchStart >= Math.Max(150, s.HoldMs) / 1000.0 && _travel < TapMaxTravel)
+            {
+                Unlock(now);
+                _ignoreUntilLift = true;
+            }
+            if (!_unlocked)
+            {
+                _last1 = t1; _last2 = t2;
+                return false;
+            }
+        }
+        else if (s.AutoLockSeconds > 0 && fingers == 0 && !pressed && now - _lastActivity > s.AutoLockSeconds)
+        {
+            _unlocked = false;
+            Release();
+            SetActive(false);
+            _last1 = t1; _last2 = t2;
+            return false;
+        }
+
+        if (_ignoreUntilLift)
+        {
+            if (fingers == 0) _ignoreUntilLift = false;
+            _last1 = t1; _last2 = t2;
+            return true;
+        }
 
         // ---- Physical click (pressing the pad) -------------------------------
-        bool pressed = (i.Buttons & DualSenseButtons.Touchpad) != 0;
         if (pressed && _heldButton == null)
         {
             bool right = fingers >= 2 || (s.RightHalfRightClick && t1.Active && t1.X > 960);
@@ -58,32 +153,18 @@ public sealed class TouchpadMouse
             _heldButton = null;
         }
 
-        // ---- Gesture start / tap detection ------------------------------------
-        bool wasTouching = _last1.Active || _last2.Active;
-        if (fingers > 0 && !wasTouching)
+        // ---- Tap to click ----------------------------------------------------------
+        if (tapEnded && s.TapToClick && _heldButton == null)
         {
-            _touchStart = now;
-            _travel = 0;
-            _maxFingers = fingers;
-        }
-        _maxFingers = Math.Max(_maxFingers, fingers);
-
-        if (fingers == 0 && wasTouching)
-        {
-            // Tap: short, almost no movement, and not a physical press.
-            if (s.TapToClick && !pressed && _heldButton == null && now - _touchStart < TapMaxSeconds && _travel < TapMaxTravel)
-            {
-                var b = _maxFingers >= 2 ? MappingTarget.MouseRight : MappingTarget.MouseLeft;
-                InputSimulator.MouseButton(b, true);
-                InputSimulator.MouseButton(b, false);
-            }
+            var b = _maxFingers >= 2 ? MappingTarget.MouseRight : MappingTarget.MouseLeft;
+            InputSimulator.MouseButton(b, true);
+            InputSimulator.MouseButton(b, false);
         }
 
         // ---- Movement / scrolling ---------------------------------------------
         if (fingers == 1 && t1.Active && _last1.Active && t1.Id == _last1.Id && !_last2.Active)
         {
             int dx = t1.X - _last1.X, dy = t1.Y - _last1.Y;
-            _travel += Math.Abs(dx) + Math.Abs(dy);
             double dist = Math.Sqrt(dx * dx + dy * dy);
             // Linear base speed plus acceleration that grows with swipe speed.
             double gain = Math.Clamp(s.Sensitivity, 1, 100) / 45.0
@@ -98,7 +179,7 @@ public sealed class TouchpadMouse
         {
             int dy = ((t1.Y - _last1.Y) + (t2.Y - _last2.Y)) / 2;
             _travel += Math.Abs(dy);
-            // ~60 touchpad units per wheel notch; natural direction (fingers up = content up) unless inverted.
+            // ~60 touchpad units per wheel notch; natural direction unless inverted.
             _scrollRem += (s.InvertScroll ? dy : -dy) / 60.0;
             int notches = (int)_scrollRem;
             _scrollRem -= notches;
@@ -111,6 +192,29 @@ public sealed class TouchpadMouse
 
         _last1 = t1;
         _last2 = t2;
+        return true;
+    }
+
+    private void Unlock(double now)
+    {
+        _unlocked = true;
+        _lastActivity = now;
+        SetActive(true);
+    }
+
+    /// <summary>Locks the touchpad again (e.g. PS + touchpad shortcut).</summary>
+    public void Lock()
+    {
+        _unlocked = false;
+        Release();
+        SetActive(false);
+    }
+
+    private void SetActive(bool active)
+    {
+        if (IsActive == active) return;
+        IsActive = active;
+        ActiveChanged?.Invoke(active);
     }
 
     public void Release()

@@ -53,6 +53,14 @@ public sealed class Profile
     public List<ButtonMapping> Mappings { get; set; } = [];
     public MouseSettings Mouse { get; set; } = new();
     public TouchpadMouseSettings Touchpad { get; set; } = new();
+    public GyroStickSettings GyroStick { get; set; } = new();
+
+    /// <summary>Holding this button switches every mapping to the Shift layer.</summary>
+    public DualSenseButtons ShiftButton { get; set; } = DualSenseButtons.None;
+    /// <summary>Two-stage triggers: analog value (0-255) where the "half pull" button fires.</summary>
+    public int TriggerHalfPull { get; set; } = 110;
+    /// <summary>Analog value where the "full pull" button fires.</summary>
+    public int TriggerFullPull { get; set; } = 245;
 
     // Turbo (rapid fire) on the virtual controller
     public DualSenseButtons TurboButtons { get; set; }
@@ -87,6 +95,11 @@ public sealed class AppSettings
 
     /// <summary>PS + button shortcuts (profile switching, mouse toggle...).</summary>
     public bool EnableShortcuts { get; set; } = true;
+
+    /// <summary>Keep learning the gyro's resting offset whenever the controller lies still.</summary>
+    public bool GyroAutoCalibrate { get; set; } = true;
+    /// <summary>Tray notification when a controller's battery drops to 20% and 10%.</summary>
+    public bool LowBatteryAlert { get; set; } = true;
 
     public bool UseOsc { get; set; }
     public string OscAddress { get; set; } = "127.0.0.1";

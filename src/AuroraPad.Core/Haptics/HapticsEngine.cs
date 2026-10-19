@@ -21,7 +21,9 @@ public sealed class HapticsEngine : IDisposable
     private WasapiLoopbackCapture? _loopback;
     private BufferedWaveProvider? _loopBuffer;
 
-    public string DeviceName => _device.FriendlyName;
+    // Read once: MMDevice.FriendlyName opens the COM property store on every access and is slow
+    // enough (tens of ms) to stall a UI that polls it every frame.
+    public string DeviceName { get; private set; } = "";
 
     /// <summary>Last failure from <see cref="TryCreate"/>, for diagnostics.</summary>
     public static Exception? LastException { get; private set; }
@@ -29,16 +31,18 @@ public sealed class HapticsEngine : IDisposable
     private HapticsEngine(MMDevice device)
     {
         _device = device;
+        DeviceName = device.FriendlyName;
         // Shared-mode WASAPI only accepts the device's own mix format (WaveFormatExtensible with a
         // channel mask), so samples are rendered in that exact format instead of a plain float format.
         var mix = device.AudioClient.MixFormat;
+        MixFormatDescription = mix.ToString();
         _mixer = new HapticsMixer(mix.SampleRate, mix.Channels);
         _out = new WasapiOut(device, AudioClientShareMode.Shared, true, 20);
         _out.Init(new NativeFormatProvider(_mixer, mix));
         _out.Play();
     }
 
-    public string MixFormatDescription => _device.AudioClient.MixFormat.ToString();
+    public string MixFormatDescription { get; }
 
     /// <summary>Converts float samples to the device mix format (32-bit float or 16/24-bit PCM).</summary>
     private sealed class NativeFormatProvider(ISampleProvider source, WaveFormat format) : IWaveProvider
@@ -115,6 +119,25 @@ public sealed class HapticsEngine : IDisposable
         _mixer.SetLowPass(lowPassHz);
     }
 
+    /// <summary>
+    /// Plays an audio file (wav, mp3, m4a…) once through the actuators, e.g. a haptic effect
+    /// designed as audio. Returns an error message, or null on success.
+    /// </summary>
+    public string? PlayFile(string path)
+    {
+        try
+        {
+            var reader = new MediaFoundationReader(path);
+            ISampleProvider src = reader.ToSampleProvider();
+            if (src.WaveFormat.Channels > 1) src = new MonoMixer(src);
+            if (src.WaveFormat.SampleRate != _mixer.WaveFormat.SampleRate)
+                src = new WdlResamplingSampleProvider(src, _mixer.WaveFormat.SampleRate);
+            _mixer.SetFile(src, reader);
+            return null;
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
     /// <summary>Rumble motor values (0-255) from the game.</summary>
     public void SetRumble(byte large, byte small) => _mixer.SetRumble(large / 255f, small / 255f);
 
@@ -188,6 +211,19 @@ public sealed class HapticsEngine : IDisposable
         public bool UseRumble { get; set; }
         public float Gain { get; set; } = 1f;
         public ISampleProvider? AudioSource { get; set; }
+        private ISampleProvider? _file;
+        private IDisposable? _fileOwner;
+        private float[] _fileBuf = [];
+
+        public void SetFile(ISampleProvider src, IDisposable owner)
+        {
+            lock (_lock)
+            {
+                _fileOwner?.Dispose();
+                _file = src;
+                _fileOwner = owner;
+            }
+        }
 
         public HapticsMixer(int sampleRate, int channels)
         {
@@ -215,6 +251,17 @@ public sealed class HapticsEngine : IDisposable
                 audioFrames = src.Read(_audio, 0, frames);
             }
 
+            int fileFrames = 0;
+            lock (_lock)
+            {
+                if (_file != null)
+                {
+                    if (_fileBuf.Length < frames) _fileBuf = new float[frames];
+                    fileFrames = _file.Read(_fileBuf, 0, frames);
+                    if (fileFrames < frames) { _fileOwner?.Dispose(); _file = null; _fileOwner = null; } // finished
+                }
+            }
+
             float rate = WaveFormat.SampleRate;
             // Large motor ≈ low thump, small motor ≈ higher buzz; actuators respond well to 50-300 Hz.
             float stepL = 2 * MathF.PI * 60 / rate, stepS = 2 * MathF.PI * 170 / rate;
@@ -229,6 +276,7 @@ public sealed class HapticsEngine : IDisposable
                         _phaseL = (_phaseL + stepL) % (2 * MathF.PI);
                         _phaseS = (_phaseS + stepS) % (2 * MathF.PI);
                     }
+                    if (i < fileFrames) h += _fileBuf[i];
                     if (i < audioFrames && _lowPass != null)
                         h += _lowPass.Transform(_audio[i]) * 3f;
                     h = Math.Clamp(h * Gain, -1f, 1f);

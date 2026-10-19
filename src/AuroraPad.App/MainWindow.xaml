@@ -505,6 +505,10 @@
                                     <Slider Minimum="40" Maximum="800" TickFrequency="10" Value="{Binding HapticsLowPassHz}" />
                                 </DockPanel>
                                 <CheckBox Content="{l:T hap.replace}" IsChecked="{Binding HapticsReplaceRumble}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <Button Content="{l:T hap.playFile}" Command="{Binding PlayHapticsFileCommand}" Style="{StaticResource Secondary}" />
+                                    <TextBlock Text="{Binding HapticsFileStatus}" Style="{StaticResource Dim}" VerticalAlignment="Center" />
+                                </StackPanel>
                                 <TextBlock Text="{Binding HapticsStatus}" Style="{StaticResource Dim}" Margin="0,6,0,0" />
                             </StackPanel>
                         </Border>
@@ -610,6 +614,21 @@
                                 <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,8" Text="{l:T tp.hint}" />
                                 <CheckBox Content="{l:T tp.enable}" IsChecked="{Binding TpEnabled}" FontWeight="SemiBold" />
                                 <StackPanel IsEnabled="{Binding TpEnabled}">
+                                    <DockPanel Margin="0,6,0,4">
+                                        <TextBlock Style="{StaticResource RowLabel}" Text="{l:T tp.activation}" />
+                                        <ComboBox ItemsSource="{Binding TouchpadActivations}" SelectedItem="{Binding TpActivation}" HorizontalAlignment="Left" Width="300" />
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding TpState}" Foreground="#FF34C759" Margin="190,0,0,6" />
+                                    <DockPanel Margin="0,4">
+                                        <TextBlock Style="{StaticResource RowLabel}" Text="{l:T tp.holdMs}" />
+                                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding TpHoldMs}" />
+                                        <Slider Minimum="200" Maximum="1500" TickFrequency="50" Value="{Binding TpHoldMs}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,4">
+                                        <TextBlock Style="{StaticResource RowLabel}" Text="{l:T tp.autoLock}" />
+                                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding TpAutoLock}" />
+                                        <Slider Minimum="0" Maximum="60" Value="{Binding TpAutoLock}" />
+                                    </DockPanel>
                                     <DockPanel Margin="0,4">
                                         <TextBlock Style="{StaticResource RowLabel}" Text="{l:T tp.speed}" />
                                         <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding TpSensitivity}" />
@@ -651,6 +670,57 @@
                                     <CheckBox Content="{l:T km.invertY}" IsChecked="{Binding MouseInvertY}" />
                                     <CheckBox Content="{l:T km.suppressStick}" IsChecked="{Binding MouseSuppressStick}" />
                                 </WrapPanel>
+                                <DockPanel Margin="0,8,0,4">
+                                    <TextBlock Style="{StaticResource RowLabel}" Text="{l:T km.flick360}" />
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding FlickPixels360}" />
+                                    <Slider Minimum="500" Maximum="12000" TickFrequency="100" Value="{Binding FlickPixels360}" />
+                                </DockPanel>
+                                <DockPanel Margin="0,4">
+                                    <TextBlock Style="{StaticResource RowLabel}" Text="{l:T km.gyroSmooth}" />
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding GyroSmoothing}" />
+                                    <Slider Minimum="0" Maximum="100" Value="{Binding GyroSmoothing}" />
+                                </DockPanel>
+                                <TextBlock Style="{StaticResource Dim}" Text="{l:T km.flickHint}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource H2}" Text="{l:T gyro.title}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button Content="{l:T gyro.calibrate}" Command="{Binding CalibrateGyroCommand}" />
+                                    <CheckBox Content="{l:T gyro.auto}" IsChecked="{Binding GyroAutoCalibrate}" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding GyroStatus}" Style="{StaticResource Dim}" Margin="0,0,0,10" />
+                                <CheckBox Content="{l:T gs.enable}" IsChecked="{Binding GsEnabled}" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Dim}" Text="{l:T gs.hint}" Margin="0,2,0,6" />
+                                <StackPanel IsEnabled="{Binding GsEnabled}">
+                                    <DockPanel Margin="0,4">
+                                        <TextBlock Style="{StaticResource RowLabel}" Text="{l:T gs.dps}" />
+                                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding GsDps}" />
+                                        <Slider Minimum="20" Maximum="400" TickFrequency="5" Value="{Binding GsDps}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,4">
+                                        <TextBlock Style="{StaticResource RowLabel}" Text="{l:T gs.activation}" />
+                                        <ComboBox ItemsSource="{Binding ActivationButtons}" SelectedItem="{Binding GsActivation}" HorizontalAlignment="Left" />
+                                    </DockPanel>
+                                    <CheckBox Content="{l:T km.invertY}" IsChecked="{Binding GsInvertY}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource H2}" Text="{l:T stage.title}" />
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,8" Text="{l:T stage.hint}" />
+                                <DockPanel Margin="0,4">
+                                    <TextBlock Style="{StaticResource RowLabel}" Text="{l:T stage.half}" />
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding TriggerHalfPull}" />
+                                    <Slider Minimum="20" Maximum="230" Value="{Binding TriggerHalfPull}" />
+                                </DockPanel>
+                                <DockPanel Margin="0,4">
+                                    <TextBlock Style="{StaticResource RowLabel}" Text="{l:T stage.full}" />
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowValue}" Text="{Binding TriggerFullPull}" />
+                                    <Slider Minimum="150" Maximum="255" Value="{Binding TriggerFullPull}" />
+                                </DockPanel>
                             </StackPanel>
                         </Border>
                         <Border Style="{StaticResource Card}">
@@ -660,7 +730,14 @@
                                     <TextBlock Style="{StaticResource H2}" Text="{l:T km.buttons}" Margin="0" VerticalAlignment="Center" />
                                 </DockPanel>
                                 <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,4" Text="{l:T km.buttonsHint}" />
-                                <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,10" Text="{l:T km.macroHint}" />
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,4" Text="{l:T km.macroHint}" />
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,10" Text="{l:T act.hint}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="{l:T layer.editing}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding EditingLayer}" Width="200" MinWidth="0" Margin="0,0,24,0" />
+                                    <TextBlock Text="{l:T layer.shiftButton}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <ComboBox ItemsSource="{Binding ShiftButtons}" SelectedItem="{Binding ShiftButton}" Width="200" MinWidth="0" />
+                                </StackPanel>
                                 <ItemsControl ItemsSource="{Binding Mappings}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -668,12 +745,16 @@
                                                 <DockPanel>
                                                     <TextBlock Text="{Binding Label}" Width="200" VerticalAlignment="Center" />
                                                     <ComboBox ItemsSource="{x:Static vm:MappingRowViewModel.Targets}" SelectedItem="{Binding Target}" Width="170" MinWidth="0" Margin="0,0,8,0" />
+                                                    <ComboBox ItemsSource="{x:Static vm:MappingRowViewModel.Activators}" SelectedItem="{Binding Activator}" Width="130" MinWidth="0" Margin="0,0,8,0"
+                                                              Visibility="{Binding IsMapped, Converter={StaticResource BoolVis}}" ToolTip="{l:T act.tip}" />
                                                     <ComboBox ItemsSource="{x:Static vm:MappingRowViewModel.Keys}" SelectedItem="{Binding Key}" Width="170" MinWidth="0" Margin="0,0,8,0"
                                                               Visibility="{Binding IsKeyboard, Converter={StaticResource BoolVis}}" />
                                                     <TextBox Text="{Binding MacroText, UpdateSourceTrigger=LostFocus}" Width="220" Margin="0,0,8,0"
                                                              Visibility="{Binding IsMacro, Converter={StaticResource BoolVis}}" />
                                                     <CheckBox Content="{l:T km.repeat}" IsChecked="{Binding RepeatWhileHeld}" VerticalAlignment="Center"
                                                               Visibility="{Binding IsMacro, Converter={StaticResource BoolVis}}" />
+                                                    <CheckBox Content="{l:T km.toggle}" IsChecked="{Binding Toggle}" VerticalAlignment="Center"
+                                                              Visibility="{Binding IsMapped, Converter={StaticResource BoolVis}}" ToolTip="{l:T km.toggleTip}" />
                                                     <CheckBox Content="{l:T km.keep}" IsChecked="{Binding KeepOnController}" VerticalAlignment="Center" />
                                                 </DockPanel>
                                                 <TextBlock Text="{Binding MacroError}" Foreground="#FFFF6B6B" FontSize="11" Margin="200,2,0,0"
@@ -868,6 +949,7 @@
                                 <CheckBox Content="{l:T set.boot}" IsChecked="{Binding LaunchOnBoot}" />
                                 <CheckBox Content="{l:T set.startMin}" IsChecked="{Binding StartMinimized}" />
                                 <CheckBox Content="{l:T set.tray}" IsChecked="{Binding MinimizeToTray}" />
+                                <CheckBox Content="{l:T set.lowBattery}" IsChecked="{Binding LowBatteryAlert}" />
                             </StackPanel>
                         </Border>
                         <Border Style="{StaticResource Card}">

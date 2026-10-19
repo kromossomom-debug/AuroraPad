@@ -35,7 +35,7 @@ public readonly record struct PadState(
             i.DPadLeft && !dpadSuppressed(DualSenseButtons.DPadLeft),
             i.DPadRight && !dpadSuppressed(DualSenseButtons.DPadRight),
             lx, ly, rx, ry,
-            (suppressed & DualSenseButtons.L2) != 0 ? (byte)0 : StickProcessing.ProcessTrigger(i.L2, l2Threshold, p.TriggerDeadzone),
-            (suppressed & DualSenseButtons.R2) != 0 ? (byte)0 : StickProcessing.ProcessTrigger(i.R2, r2Threshold, p.TriggerDeadzone));
+            (suppressed & (DualSenseButtons.L2 | DualSenseButtons.L2Half | DualSenseButtons.L2Full)) != 0 ? (byte)0 : StickProcessing.ProcessTrigger(i.L2, l2Threshold, p.TriggerDeadzone),
+            (suppressed & (DualSenseButtons.R2 | DualSenseButtons.R2Half | DualSenseButtons.R2Full)) != 0 ? (byte)0 : StickProcessing.ProcessTrigger(i.R2, r2Threshold, p.TriggerDeadzone));
     }
 }

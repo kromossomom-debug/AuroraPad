@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # 🌌 AuroraPad
 
@@ -23,11 +23,14 @@ Gatilhos adaptativos, hápticos, barra de luz, touchpad como mouse, emulação d
 |---|---|
 | 🎮 **Controle ao vivo** | Um DualSense desenhado na tela reage a tudo: botões acendem, analógicos se mexem, gatilhos enchem conforme a pressão, o touchpad mostra seus dedos e a barra de luz mostra a cor real. |
 | 🔫 **Gatilhos adaptativos** | Resistência, arma semiautomática, rifle, arco, galope, máquina, vibração… com **gráfico da resistência ao longo do curso** e predefinições prontas (pistola, freio, acelerador, cavalgada). |
-| 🖱️ **Touchpad como mouse** | Igual ao touchpad de um notebook: um dedo move, apertar clica (lado direito = clique direito), toque leve clica, dois dedos rolam. |
-| 💥 **Vibração e hápticos HD** | Converte a vibração do jogo — ou o som do PC — em hápticos de alta definição pelos atuadores do DualSense (USB). Padrões de teste: pulso, explosão, motor, batimento, chuva. |
+| 🖱️ **Touchpad como mouse** | Igual ao touchpad de um notebook: um dedo move, apertar clica (lado direito = clique direito), toque leve clica, dois dedos rolam. Só vira mouse depois de **dois toques ou de segurar o dedo** — o controle vibra para confirmar e trava sozinho quando você para de usar. |
+| 💥 **Vibração e hápticos HD** | Converte a vibração do jogo — ou o som do PC, ou um **arquivo de áudio** — em hápticos de alta definição pelos atuadores do DualSense (USB). Padrões de teste: pulso, explosão, motor, batimento, chuva. Aviso na bandeja quando a **bateria fica fraca**. |
 | 🌈 **Iluminação** | Barra de luz RGB com brilho, cor pela bateria, LEDs de jogador e LED do microfone. |
 | 🕹️ **Emulação** | Vira um controle **Xbox 360** ou **DualShock 4** (com giroscópio e touchpad) via ViGEmBus. O HidHide esconde o controle físico para evitar entradas duplicadas. |
 | ⌨️ **Teclado, mouse e macros** | Qualquer botão vira tecla, clique ou macro (`ctrl+c`, `w hold 300, wait 50, space`). Turbo por botão e cursor pelo giroscópio. |
+| 👆 **Ativadores e camadas** | Cada botão pode agir no **toque, toque duplo ou ao segurar** (e o uso normal continua indo para o jogo), modo **alternar** (aperta uma vez, fica segurado) e uma **camada Shift** inteira de mapeamentos enquanto você segura um botão. |
+| 🎯 **Mira avançada** | **Flick stick** (o analógico direito vira a câmera na hora), **giroscópio como analógico** para jogos sem suporte a mouse, suavização e **calibração automática** do giroscópio. |
+| 🔫 **Gatilhos em dois estágios** | Meio curso e fim de curso viram botões separados: mire no meio, atire no fim. |
 | 🎯 **Perfis por jogo** | Biblioteca de jogos da **Steam, Epic e GOG**; o perfil certo entra sozinho quando o jogo abre. |
 | 🔌 **Integrações** | Servidor UDP compatível com mods de gatilhos (porta 6969), servidor de movimento **Cemuhook/DSU** para emuladores (Cemu, Dolphin, Ryujinx…) e saída **OSC** (VRChat, TouchDesigner…). |
 | ⚡ **Atalhos PS** | PS + Options/Create troca de perfil, PS + touchpad liga/desliga o mouse, PS + △ pausa o controle virtual, PS + ▲/▼ ajusta o brilho. |

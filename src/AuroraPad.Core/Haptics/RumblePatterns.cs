@@ -1,6 +1,6 @@
 ﻿namespace AuroraPad.Core.Haptics;
 
-public enum RumblePattern { Pulse, Explosion, Engine, Heartbeat, Rain, Ramp }
+public enum RumblePattern { Pulse, Explosion, Engine, Heartbeat, Rain, Ramp, TickOn, TickOff }
 
 /// <summary>Short test sequences of (large motor, small motor, duration) steps.</summary>
 public static class RumblePatterns
@@ -29,6 +29,12 @@ public static class RumblePatterns
             case RumblePattern.Rain:
                 var rnd = new Random(7);
                 for (int i = 0; i < 30; i++) yield return (0, (byte)rnd.Next(60, 200), rnd.Next(20, 60));
+                break;
+            case RumblePattern.TickOn: // two short ticks: touchpad mouse on
+                yield return (0, 140, 35); yield return (0, 0, 60); yield return (0, 140, 35);
+                break;
+            case RumblePattern.TickOff: // one short tick: touchpad mouse locked
+                yield return (0, 100, 30);
                 break;
             case RumblePattern.Ramp:
                 for (int v = 0; v <= 255; v += 15) yield return ((byte)v, (byte)v, 60);

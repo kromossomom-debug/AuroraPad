@@ -70,6 +70,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         new(MouseSource.Touchpad, "Touchpad"),
         new(MouseSource.RightStick, L.T("km.src.right")),
         new(MouseSource.LeftStick, L.T("km.src.left")),
+        new(MouseSource.FlickStick, L.T("km.src.flick")),
     ];
 
     public IReadOnlyList<Option<HapticsMode>> HapticsModes { get; } =
@@ -81,7 +82,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     ];
 
     public IReadOnlyList<Option<DualSenseButtons>> ActivationButtons { get; } =
-        [new(DualSenseButtons.None, L.T("km.always")), .. MappingRowViewModel.AllButtons];
+        [new(DualSenseButtons.None, L.T("km.always")), .. MappingRowViewModel.AllButtons.Where(b => MappingRowViewModel.IsPhysical(b.Value))];
 
     public IReadOnlyList<Option<string>> Languages { get; } = L.Languages.Select(l => new Option<string>(l.Code, l.Name)).ToList();
 
@@ -131,6 +132,17 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     // Touchpad as mouse
     [ObservableProperty] private bool _tpEnabled, _tpRightHalf, _tpTap, _tpScroll, _tpInvertScroll, _tpKeepClick;
     [ObservableProperty] private double _tpSensitivity, _tpAcceleration;
+    [ObservableProperty] private Option<TouchpadActivation>? _tpActivation;
+    [ObservableProperty] private int _tpHoldMs, _tpAutoLock;
+    [ObservableProperty] private string _tpState = "";
+
+    public IReadOnlyList<Option<TouchpadActivation>> TouchpadActivations { get; } =
+    [
+        new(TouchpadActivation.DoubleTapOrHold, L.T("tp.act.both")),
+        new(TouchpadActivation.DoubleTap, L.T("tp.act.double")),
+        new(TouchpadActivation.Hold, L.T("tp.act.hold")),
+        new(TouchpadActivation.AlwaysOn, L.T("tp.act.always")),
+    ];
 
     // Games
     [ObservableProperty] private string _newExecutable = "";
@@ -169,12 +181,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         foreach (var b in MappingRowViewModel.AllButtons)
         {
             Mappings.Add(new MappingRowViewModel(b, MappingsEdited));
-            TurboButtons.Add(new TurboRowViewModel(b, TurboEdited));
+            if (MappingRowViewModel.IsPhysical(b.Value)) TurboButtons.Add(new TurboRowViewModel(b, TurboEdited));
         }
         ShortcutList = ShortcutEngine.Combos
             .Select(kv => $"PS + {MappingRowViewModel.AllButtons.First(b => b.Value == kv.Key).Label}  →  {L.T("sc." + kv.Value)}")
             .ToList();
         InitLibrary();
+        EditingLayer = Layers[0];
 
         foreach (var p in _store.LoadProfiles()) Profiles.Add(p);
         SelectedProfile = Profiles.FirstOrDefault(p => p.Name == _settings.ActiveProfile) ?? Profiles[0];
@@ -206,6 +219,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         LaunchOnBoot = AutoStart.IsEnabled();
         UseHidHide = _settings.UseHidHide && _hidHide.IsInstalled;
         EnableShortcuts = _settings.EnableShortcuts;
+        GyroAutoCalibrate = _settings.GyroAutoCalibrate;
+        LowBatteryAlert = _settings.LowBatteryAlert;
         SelectedLanguage = Languages.FirstOrDefault(l => l.Value == L.Language) ?? Languages[0];
         _loading = false;
         RestartUdp();
@@ -222,7 +237,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _foreground = new ForegroundWatcher(TimeSpan.FromSeconds(1));
         _foreground.ForegroundChanged += exe => Application.Current.Dispatcher.BeginInvoke(() => OnForegroundChanged(exe));
 
-        _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(33), DispatcherPriority.Background, (_, _) => Tick(), Application.Current.Dispatcher);
+        // Live input is refreshed once per rendered frame (vsync, usually 60 Hz) so the controller
+        // drawing follows the hands with no visible delay; status text only needs a slow timer.
+        CompositionTarget.Rendering += OnRendering;
+        _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) => UpdateStatus(), Application.Current.Dispatcher);
         _timer.Start();
     }
 
@@ -236,6 +254,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         lock (_sessions) index = Enumerable.Range(0, 8).First(i => _sessions.All(s => s.Index != i));
         var session = new ControllerSession(dev, SelectedProfile!, index);
         session.ShortcutsEnabled = EnableShortcuts;
+        session.GyroAutoCalibrate = GyroAutoCalibrate;
         session.ShortcutTriggered += (s, action) => Application.Current.Dispatcher.BeginInvoke(() => OnShortcut(s, action));
         lock (_sessions) _sessions.Add(session);
         _dsu.Attach(session);
@@ -260,12 +279,43 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Log(L.F("log.disconnected", vm.Name));
     }
 
-    private void Tick()
+    // Diagnostics (AURORAPAD_DIAG=1): frame intervals and refresh cost, written once per second.
+    private static readonly bool Diag = Environment.GetEnvironmentVariable("AURORAPAD_DIAG") == "1";
+    private readonly Stopwatch _diagClock = Stopwatch.StartNew();
+    private double _diagLast, _diagMax, _diagSum, _diagWork;
+    private int _diagCount;
+
+    /// <summary>Per-frame refresh of everything that follows the controller live.</summary>
+    private void OnRendering(object? sender, EventArgs e)
     {
-        foreach (var c in Controllers) c.Refresh();
+        double t0 = _diagClock.Elapsed.TotalMilliseconds;
+        // Only the selected controller is drawn live; others are refreshed by the status timer.
+        SelectedController?.Refresh();
         var live = SelectedController?.Session.Device.Input;
         LeftTrigger.SetLive(live?.L2 ?? 0);
         RightTrigger.SetLive(live?.R2 ?? 0);
+        if (!Diag) return;
+        double t1 = _diagClock.Elapsed.TotalMilliseconds;
+        if (_diagLast > 0) { double d = t0 - _diagLast; _diagSum += d; _diagMax = Math.Max(_diagMax, d); _diagCount++; }
+        _diagWork += t1 - t0;
+        _diagLast = t0;
+        if (_diagSum > 1000)
+        {
+            File.AppendAllText(Path.Combine(_store.Root, "diag.log"),
+                $"{DateTime.Now:HH:mm:ss} frames={_diagCount} avg={_diagSum / _diagCount:F1}ms max={_diagMax:F1}ms work={_diagWork / _diagCount:F2}ms tier={RenderCapability.Tier >> 16}\n");
+            _diagSum = _diagMax = _diagWork = 0; _diagCount = 0;
+        }
+    }
+
+    /// <summary>Slow refresh (4 Hz) of status text and of controllers that are not selected.</summary>
+    private void UpdateStatus()
+    {
+        CheckBattery();
+        foreach (var c in Controllers)
+        {
+            c.RefreshStatus();
+            if (c != SelectedController) c.Refresh();
+        }
         UdpStatus = !UseUdp ? L.T("common.disabled")
             : _udp.IsRunning ? L.F("udp.status", UdpPort, _udp.PacketsReceived) + (_udp.LastPacket is { } t ? L.F("udp.last", t.ToString("HH:mm:ss")) : "")
             : L.F("common.error", _udp.LastError);
@@ -278,6 +328,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             : _hidHide.HiddenIds.Count > 0 ? L.F("hh.hidden", _hidHide.HiddenIds.Count)
             : L.T("hh.ok");
         var hs = SelectedController?.Session;
+        TpState = hs == null || !TpEnabled ? "" : hs.TouchpadMouseActive ? L.T("tp.state.on") : L.T("tp.state.off");
         HapticsStatus = hs == null ? "" : hs.HapticsDevice != null ? L.F("ctl.haptics", hs.HapticsDevice)
             : hs.HapticsError != null ? L.F("ctl.hapticsError", hs.HapticsError) : "";
         StatusText = (Controllers.Count switch
@@ -288,7 +339,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }) + (SelectedProfile != null ? L.F("status.profile", SelectedProfile.Name) : "")
            + (_autoProfile != null ? L.T("status.auto") : "");
     }
-
     // ---- Profile editing ----------------------------------------------
 
     partial void OnSelectedProfileChanged(Profile? value)
@@ -331,10 +381,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         TpEnabled = p.Touchpad.Enabled; TpSensitivity = p.Touchpad.Sensitivity; TpAcceleration = p.Touchpad.Acceleration;
         TpRightHalf = p.Touchpad.RightHalfRightClick; TpTap = p.Touchpad.TapToClick; TpScroll = p.Touchpad.TwoFingerScroll;
         TpInvertScroll = p.Touchpad.InvertScroll; TpKeepClick = p.Touchpad.KeepClickOnController;
+        TpActivation = TouchpadActivations.FirstOrDefault(a => a.Value == p.Touchpad.Activation) ?? TouchpadActivations[0];
+        TpHoldMs = p.Touchpad.HoldMs; TpAutoLock = p.Touchpad.AutoLockSeconds;
         foreach (var t in TurboButtons) { t.Loading = true; t.IsOn = (p.TurboButtons & t.Button) != 0; t.Loading = false; }
         LeftTrigger.Load(p.LeftTrigger);
         RightTrigger.Load(p.RightTrigger);
-        foreach (var row in Mappings) row.Load(p.Mappings.FirstOrDefault(m => m.Button == row.Button));
+        LoadAdvanced(p);
         GameExecutables.Clear();
         foreach (var exe in p.Executables) GameExecutables.Add(exe);
         _loading = false;
@@ -353,7 +405,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         nameof(SelectedMouseSource), nameof(MouseSensitivity), nameof(MouseActivation),
         nameof(MouseInvertX), nameof(MouseInvertY), nameof(MouseSuppressStick), nameof(TurboRate),
         nameof(TpEnabled), nameof(TpSensitivity), nameof(TpAcceleration), nameof(TpRightHalf), nameof(TpTap),
-        nameof(TpScroll), nameof(TpInvertScroll), nameof(TpKeepClick),
+        nameof(TpScroll), nameof(TpInvertScroll), nameof(TpKeepClick), nameof(TpActivation), nameof(TpHoldMs), nameof(TpAutoLock),
     ];
 
     private static readonly HashSet<string> SettingFields =
@@ -367,8 +419,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         base.OnPropertyChanged(e);
         if (_loading || SelectedProfile == null || e.PropertyName == null) return;
-        if (ProfileFields.Contains(e.PropertyName))
+        if (ProfileFields.Contains(e.PropertyName) || AdvancedProfileFields.Contains(e.PropertyName))
             WriteEditorsToProfile();
+        else if (AdvancedSettingFields.Contains(e.PropertyName))
+            AdvancedSettingsEdited(e.PropertyName);
         else if (e.PropertyName is nameof(TestLarge) or nameof(TestSmall))
             foreach (var c in Controllers) c.Session.SetTestRumble((byte)TestLarge, (byte)TestSmall);
         else if (SettingFields.Contains(e.PropertyName))
@@ -400,9 +454,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         p.Mouse.ActivationButton = MouseActivation?.Value ?? DualSenseButtons.None;
         p.Mouse.InvertX = MouseInvertX; p.Mouse.InvertY = MouseInvertY; p.Mouse.SuppressStick = MouseSuppressStick;
         p.TurboRate = TurboRate;
+        WriteAdvanced(p);
         p.Touchpad.Enabled = TpEnabled; p.Touchpad.Sensitivity = TpSensitivity; p.Touchpad.Acceleration = TpAcceleration;
         p.Touchpad.RightHalfRightClick = TpRightHalf; p.Touchpad.TapToClick = TpTap; p.Touchpad.TwoFingerScroll = TpScroll;
         p.Touchpad.InvertScroll = TpInvertScroll; p.Touchpad.KeepClickOnController = TpKeepClick;
+        p.Touchpad.Activation = TpActivation?.Value ?? TouchpadActivation.DoubleTapOrHold;
+        p.Touchpad.HoldMs = TpHoldMs; p.Touchpad.AutoLockSeconds = TpAutoLock;
         UpdatePreview();
         ProfileEdited();
     }
@@ -410,7 +467,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void MappingsEdited()
     {
         if (_loading || SelectedProfile == null) return;
-        SelectedProfile.Mappings = Mappings.Select(r => r.ToMapping()).OfType<ButtonMapping>().ToList();
+        SelectedProfile.Mappings = MergeMappingRows(SelectedProfile);
         ProfileEdited();
     }
 
@@ -753,6 +810,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _timer.Stop();
+        CompositionTarget.Rendering -= OnRendering;
         _foreground.Dispose();
         if (_manualProfile != null) _store.Save(_manualProfile);
         if (SelectedProfile != null) _store.Save(SelectedProfile);

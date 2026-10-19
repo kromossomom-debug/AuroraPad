@@ -28,7 +28,19 @@ public sealed class ButtonMapping
     public string Macro { get; set; } = "";
     /// <summary>Macro keeps repeating while the button is held.</summary>
     public bool RepeatWhileHeld { get; set; }
+    /// <summary>Which kind of press fires this mapping.</summary>
+    public PressActivator Activator { get; set; } = PressActivator.Press;
+    /// <summary>Press once to hold the key/click, press again to release it.</summary>
+    public bool Toggle { get; set; }
+    /// <summary>0 = main layer, 1 = Shift layer (active while the profile's Shift button is held).</summary>
+    public int Layer { get; set; }
 }
+
+/// <summary>
+/// Press = behaves like the button (held while held). Tap / DoubleTap / LongPress fire only on that
+/// gesture; any other use of the button still reaches the virtual controller.
+/// </summary>
+public enum PressActivator { Press, Tap, DoubleTap, LongPress }
 
 /// <summary>App actions triggered by holding PS and pressing another button.</summary>
 public enum ShortcutAction
@@ -42,7 +54,7 @@ public enum ShortcutAction
     ShowBattery,
 }
 
-public enum MouseSource { None, Gyro, Touchpad, RightStick, LeftStick }
+public enum MouseSource { None, Gyro, Touchpad, RightStick, LeftStick, FlickStick }
 
 public sealed class MouseSettings
 {
@@ -55,6 +67,21 @@ public sealed class MouseSettings
     public bool InvertY { get; set; }
     /// <summary>Stick used as mouse is removed from the virtual controller.</summary>
     public bool SuppressStick { get; set; } = true;
+    /// <summary>Flick stick: mouse pixels that make a full 360° turn in the game (calibrate per game).</summary>
+    public int FlickPixels360 { get; set; } = 3000;
+    /// <summary>Gyro mouse: smooth out tiny hand tremors (0 = off, 100 = strongest).</summary>
+    public int GyroSmoothing { get; set; } = 40;
+}
+
+/// <summary>Gyro added to the virtual controller's right stick, for games without mouse aiming.</summary>
+public sealed class GyroStickSettings
+{
+    public bool Enabled { get; set; }
+    /// <summary>Turn speed (degrees per second) that pushes the stick all the way.</summary>
+    public int FullDeflectionDps { get; set; } = 120;
+    /// <summary>Only active while this button is held (e.g. L2 to aim); None = always.</summary>
+    public DualSenseButtons ActivationButton { get; set; } = DualSenseButtons.None;
+    public bool InvertY { get; set; }
 }
 
 /// <summary>Names for keys shown in the mapping UI.</summary>

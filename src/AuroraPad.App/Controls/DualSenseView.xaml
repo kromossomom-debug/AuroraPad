@@ -80,6 +80,10 @@
                         <Setter Property="BorderBrush" Value="#FFC4C8CE" />
                         <Setter Property="BorderThickness" Value="1.5" />
                         <Style.Triggers>
+                            <DataTrigger Binding="{Binding TouchpadMouseOn}" Value="True">
+                                <Setter Property="BorderBrush" Value="#FF34C759" />
+                                <Setter Property="BorderThickness" Value="3" />
+                            </DataTrigger>
                             <DataTrigger Binding="{Binding Touchpad}" Value="True">
                                 <Setter Property="BorderBrush" Value="{StaticResource Hot}" />
                                 <Setter Property="BorderThickness" Value="3" />

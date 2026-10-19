@@ -28,6 +28,7 @@ public partial class MainWindow : Window
             Visible = true,
         };
         _tray.DoubleClick += (_, _) => ShowFromTray();
+        _vm.Notify += (title, text) => _tray.ShowBalloonTip(4000, title, text, Forms.ToolTipIcon.Warning);
 
         bool minimized = _vm.StartMinimized || Environment.GetCommandLineArgs().Contains("--minimized");
         if (minimized)

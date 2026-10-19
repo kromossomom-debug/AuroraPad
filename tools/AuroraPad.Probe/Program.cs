@@ -18,6 +18,112 @@ if (args.Length > 0 && args[0] == "hidhide")
     return 0;
 }
 
+// "latency [none|xbox|ds4]": report rate, handler cost and how stale processed reports are.
+if (args.Length > 0 && args[0] == "latency")
+{
+    var mode = args.Length > 1 ? args[1] switch { "xbox" => EmulationMode.Xbox360, "ds4" => EmulationMode.DualShock4, _ => EmulationMode.None } : EmulationMode.None;
+    using var mgr = new DeviceManager();
+    mgr.Start();
+    Thread.Sleep(500);
+    var pad = mgr.Devices[0];
+    var prof = args.Length > 2 && args[2] == "mine" ? new ProfileStore().LoadProfiles().First(p => p.Name == new ProfileStore().LoadSettings().ActiveProfile) : new Profile { Emulation = mode };
+    if (args.Length > 2 && args[2] == "mine") Console.WriteLine($"profile {prof.Name}: emu={prof.Emulation} haptics={prof.HapticsMode} touchpad={prof.Touchpad.Enabled} mouse={prof.Mouse.Source} mappings={prof.Mappings.Count}");
+    using var s = new ControllerSession(pad, prof);
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    int count = 0; double total = 0, max = 0; uint firstTs = 0; double firstWall = 0; double worstLag = 0;
+    pad.InputReceived += (_, input) =>
+    {
+        // Sensor timestamp ticks are ~0.33 µs on DualSense; compare device time vs wall time to see backlog growth.
+        double wall = sw.Elapsed.TotalSeconds;
+        if (count == 0) { firstTs = input.SensorTimestamp; firstWall = wall; }
+        double devElapsed = (input.SensorTimestamp - firstTs) / 3_000_000.0;
+        worstLag = Math.Max(worstLag, (wall - firstWall) - devElapsed);
+        count++;
+    };
+    // Measure the session's own handler cost by timing a parallel subscriber placed after it.
+    double last = 0;
+    pad.InputReceived += (_, _) => { double now = sw.Elapsed.TotalMilliseconds; if (last > 0) { var d = now - last; total += d; max = Math.Max(max, d); } last = now; };
+    Thread.Sleep(5000);
+    Console.WriteLine($"mode={mode} reports={count} rate={count / 5.0:F0}/s avgInterval={total / Math.Max(1, count - 1):F2}ms maxInterval={max:F1}ms backlogGrowth={worstLag * 1000:F0}ms");
+    return 0;
+}
+
+// "touchgate": simulated touches through the touchpad mouse lock; no real input is sent.
+if (args.Length > 0 && args[0] == "touchgate")
+{
+    int sent = 0;
+    AuroraPad.Core.Mapping.InputSimulator.TestSink = _ => Interlocked.Increment(ref sent);
+    var settings = new AuroraPad.Core.Mapping.TouchpadMouseSettings { AutoLockSeconds = 1 };
+    var tp = new AuroraPad.Core.Mapping.TouchpadMouse();
+    tp.ActiveChanged += on => Console.WriteLine($"   -> touchpad mouse {(on ? "ATIVO" : "travado")}");
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    ushort x = 900;
+    void Feed(bool touching, int ms, bool moving = false)
+    {
+        var end = sw.Elapsed.TotalMilliseconds + ms;
+        while (sw.Elapsed.TotalMilliseconds < end)
+        {
+            if (moving) x += 6;
+            var inp = new DualSenseInput { Touch1 = new TouchPoint(touching, 1, x, 500) };
+            tp.Process(inp, settings, sw.Elapsed.TotalSeconds);
+            Thread.Sleep(4);
+        }
+    }
+    Console.WriteLine("1) Deslizar com o touchpad travado:"); sent = 0; Feed(true, 200, true); Feed(false, 50); Console.WriteLine($"   eventos de mouse: {sent}");
+    Console.WriteLine("2) Dois toques rápidos:"); Feed(true, 60); Feed(false, 100); Feed(true, 60); Feed(false, 100);
+    Console.WriteLine("3) Deslizar com ele ativo:"); sent = 0; Feed(true, 200, true); Feed(false, 50); Console.WriteLine($"   eventos de mouse: {sent}");
+    Console.WriteLine("4) Ficar 1,3 s sem tocar:"); Feed(false, 1300);
+    Console.WriteLine("5) Segurar o dedo parado 700 ms:"); Feed(true, 700); Feed(false, 50);
+    AuroraPad.Core.Mapping.InputSimulator.TestSink = null;
+    return 0;
+}
+
+// "activators": simulated presses through the mapping engine; no real input is sent.
+if (args.Length > 0 && args[0] == "activators")
+{
+    var log = new List<string>();
+    var t0 = DateTime.UtcNow;
+    AuroraPad.Core.Mapping.InputSimulator.TestSink = e => { lock (log) log.Add($"{(DateTime.UtcNow - t0).TotalMilliseconds,5:F0}ms {e}"); };
+    var engine = new AuroraPad.Core.Mapping.MappingEngine();
+    var input0 = DualSenseInput.Neutral;
+
+    void Run(string title, AuroraPad.Core.Mapping.ButtonMapping map, params (bool Down, int Ms)[] seq)
+    {
+        var prof = new Profile { Mappings = [map], Touchpad = { Enabled = false } };
+        lock (log) log.Clear();
+        t0 = DateTime.UtcNow;
+        var injectedSeen = DualSenseButtons.None;
+        foreach (var (down, ms) in seq)
+        {
+            var end = DateTime.UtcNow.AddMilliseconds(ms);
+            while (DateTime.UtcNow < end)
+            {
+                var inp = new DualSenseInput { Buttons = down ? DualSenseButtons.Cross : DualSenseButtons.None };
+                var (_, inj) = engine.Process(inp, prof);
+                injectedSeen |= inj;
+                Thread.Sleep(4);
+            }
+        }
+        Thread.Sleep(80);
+        lock (log) Console.WriteLine($"{title}: {(log.Count == 0 ? "(nada enviado)" : string.Join(" | ", log))}{(injectedSeen != 0 ? $"  [jogo recebe: {injectedSeen}]" : "")}");
+        engine.ReleaseAll();
+    }
+
+    var key = new AuroraPad.Core.Mapping.ButtonMapping { Button = DualSenseButtons.Cross, Target = AuroraPad.Core.Mapping.MappingTarget.Keyboard, VirtualKey = 0x41 };
+    AuroraPad.Core.Mapping.ButtonMapping With(Action<AuroraPad.Core.Mapping.ButtonMapping> f) { var m = new AuroraPad.Core.Mapping.ButtonMapping { Button = key.Button, Target = key.Target, VirtualKey = key.VirtualKey }; f(m); return m; }
+
+    Run("Press, toque curto       ", With(_ => { }), (true, 100), (false, 50));
+    Run("Tap, toque curto         ", With(m => m.Activator = AuroraPad.Core.Mapping.PressActivator.Tap), (true, 100), (false, 50));
+    Run("Tap, segurado 600ms      ", With(m => m.Activator = AuroraPad.Core.Mapping.PressActivator.Tap), (true, 600), (false, 50));
+    Run("DoubleTap, 1 toque       ", With(m => m.Activator = AuroraPad.Core.Mapping.PressActivator.DoubleTap), (true, 80), (false, 400));
+    Run("DoubleTap, 2 toques      ", With(m => m.Activator = AuroraPad.Core.Mapping.PressActivator.DoubleTap), (true, 80), (false, 100), (true, 80), (false, 100));
+    Run("LongPress, toque curto   ", With(m => m.Activator = AuroraPad.Core.Mapping.PressActivator.LongPress), (true, 100), (false, 100));
+    Run("LongPress, segurado 700ms", With(m => m.Activator = AuroraPad.Core.Mapping.PressActivator.LongPress), (true, 700), (false, 50));
+    Run("Toggle, 2 apertos        ", With(m => m.Toggle = true), (true, 80), (false, 150), (true, 80), (false, 50));
+    AuroraPad.Core.Mapping.InputSimulator.TestSink = null;
+    return 0;
+}
+
 // "tree": virtual-device filter on every Sony HID device.
 if (args.Length > 0 && args[0] == "tree")
 {

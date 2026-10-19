@@ -55,6 +55,9 @@ public sealed class ControllerSession : IDisposable
         get => _mapping.Enabled;
         set => _mapping.Enabled = value;
     }
+    /// <summary>True while the touchpad is acting as a mouse (unlocked).</summary>
+    public bool TouchpadMouseActive => _mapping.TouchpadMouseActive;
+
     public bool HasModOverrides => _modLeft != null || _modRight != null || _modColor != null || _modPlayerLeds != null || _modMic != null;
 
     public event Action<ControllerSession>? StateChanged;
@@ -82,6 +85,8 @@ public sealed class ControllerSession : IDisposable
         _profile = profile.Clone();
         Device.InputReceived += OnInput;
         _shortcuts.Triggered += OnShortcut;
+        // Feel when the touchpad turns into a mouse (or locks again) without looking at the screen.
+        _mapping.TouchpadMouseChanged += on => _ = PlayPatternAsync(on ? Haptics.RumblePattern.TickOn : Haptics.RumblePattern.TickOff);
         ApplyEmulation();
         ApplyHaptics();
         ApplyOutput();
@@ -261,7 +266,8 @@ public sealed class ControllerSession : IDisposable
     {
         var p = Profile;
         var (shortcutSuppressed, injectPs) = _shortcuts.Process(input.Buttons);
-        var suppressed = _mapping.Process(input, p) | shortcutSuppressed;
+        var (mapSuppressed, injected) = _mapping.Process(input, p);
+        var suppressed = mapSuppressed | shortcutSuppressed;
         var pad = PadState.From(input, p, suppressed,
             _modLeftThreshold ?? p.LeftTrigger.Threshold,
             _modRightThreshold ?? p.RightTrigger.Threshold);
@@ -270,7 +276,22 @@ public sealed class ControllerSession : IDisposable
             if (p.Mouse.Source == MouseSource.RightStick) pad = pad with { RightX = 0, RightY = 0 };
             if (p.Mouse.Source == MouseSource.LeftStick) pad = pad with { LeftX = 0, LeftY = 0 };
         }
-        if (injectPs) pad = pad with { Buttons = pad.Buttons | DualSenseButtons.PS };
+        if (injectPs) injected |= DualSenseButtons.PS;
+        if (injected != DualSenseButtons.None)
+        {
+            // Gestures that did not trigger a mapping (e.g. a single tap on a double-tap button) reach the game as a short tap.
+            pad = pad with
+            {
+                Buttons = pad.Buttons | injected,
+                Up = pad.Up || (injected & DualSenseButtons.DPadUp) != 0,
+                Down = pad.Down || (injected & DualSenseButtons.DPadDown) != 0,
+                Left = pad.Left || (injected & DualSenseButtons.DPadLeft) != 0,
+                Right = pad.Right || (injected & DualSenseButtons.DPadRight) != 0,
+                L2 = (injected & DualSenseButtons.L2) != 0 ? (byte)255 : pad.L2,
+                R2 = (injected & DualSenseButtons.R2) != 0 ? (byte)255 : pad.R2,
+            };
+        }
+        pad = ApplyGyroStick(pad, input, p);
         if (p.TurboButtons != DualSenseButtons.None)
         {
             // Square wave: held turbo buttons alternate pressed/released TurboRate times per second.
@@ -305,12 +326,55 @@ public sealed class ControllerSession : IDisposable
         }
     }
 
+    /// <summary>Adds gyro motion to the right stick (aiming in games that only read a gamepad).</summary>
+    private PadState ApplyGyroStick(PadState pad, DualSenseInput input, Profile p)
+    {
+        var g = p.GyroStick;
+        if (!g.Enabled) return pad;
+        if (g.ActivationButton != DualSenseButtons.None && (input.Buttons & g.ActivationButton) == 0) return pad;
+        var (pitch, yaw, _) = _mapping.Gyro.Dps;
+        double full = Math.Max(10, g.FullDeflectionDps);
+        static double Shape(double v) => Math.Abs(v) < 0.02 ? 0 : Math.Sign(v) * Math.Min(1, 0.08 + Math.Abs(v)); // small anti-deadzone so slow aim registers
+        double sx = Shape(-yaw / full), sy = Shape((g.InvertY ? -pitch : pitch) / full);
+        return pad with
+        {
+            RightX = Math.Clamp(pad.RightX + sx, -1, 1),
+            RightY = Math.Clamp(pad.RightY + sy, -1, 1),
+        };
+    }
+
+    /// <summary>Learns the gyro's resting offset; the controller must lie still. Returns false on timeout.</summary>
+    public Task<bool> CalibrateGyroAsync() => _mapping.Gyro.CalibrateAsync(TimeSpan.FromSeconds(6));
+
+    public bool GyroAutoCalibrate
+    {
+        get => _mapping.Gyro.AutoCalibrate;
+        set => _mapping.Gyro.AutoCalibrate = value;
+    }
+
+    public bool ShiftActive => _mapping.ShiftActive;
+
+    /// <summary>Plays an audio file through the DualSense actuators (USB only). Returns an error or null.</summary>
+    public string? PlayHapticsFile(string path)
+    {
+        if (Device.IsDualShock4) return "o DualShock 4 não tem hápticos";
+        if (Device.Connection != ConnectionType.Usb) return "hápticos por áudio só funcionam por USB";
+        if (_haptics == null)
+        {
+            _haptics = Haptics.HapticsEngine.TryCreate(Index, out var err);
+            if (_haptics == null) return err;
+            _haptics.Configure(Profile.HapticsMode, Profile.HapticsGain / 100.0, Profile.HapticsLowPassHz);
+        }
+        return _haptics.PlayFile(path);
+    }
+
     private void ApplyHaptics()
     {
         var p = Profile;
         bool want = p.HapticsMode != Haptics.HapticsMode.Off && !Device.IsDualShock4 && Device.Connection == ConnectionType.Usb;
         if (!want)
         {
+            if (p.HapticsMode == Haptics.HapticsMode.Off && _haptics != null) { _haptics.Configure(Haptics.HapticsMode.Off, 1, 200); HapticsError = null; return; }
             _haptics?.Dispose();
             _haptics = null;
             HapticsError = p.HapticsMode == Haptics.HapticsMode.Off ? null

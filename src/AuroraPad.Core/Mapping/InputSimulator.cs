@@ -70,7 +70,20 @@ public static class InputSimulator
         0x6F, 0x90,             // numpad divide, NumLock
     ];
 
-    private static void Send(Input input) => SendInput(1, [input], Marshal.SizeOf<Input>());
+    /// <summary>When set (tests), events are described here instead of being sent to Windows.</summary>
+    public static Action<string>? TestSink { get; set; }
+
+    private static void Send(Input input)
+    {
+        if (TestSink is { } sink)
+        {
+            sink(input.Type == InputKeyboard
+                ? $"key scan={input.U.Keyboard.Scan} {((input.U.Keyboard.Flags & KeyEventFKeyUp) != 0 ? "up" : "down")}"
+                : $"mouse flags=0x{input.U.Mouse.Flags:X} dx={input.U.Mouse.Dx} dy={input.U.Mouse.Dy}");
+            return;
+        }
+        SendInput(1, [input], Marshal.SizeOf<Input>());
+    }
 
     public static void Key(ushort vk, bool down)
     {
