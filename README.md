@@ -4,6 +4,8 @@
 
 # 🌌 AuroraPad
 
+**🇧🇷 Português** · [🇺🇸 English](README.en.md)
+
 **Leve o seu DualSense para o PC de verdade.**
 Gatilhos adaptativos, hápticos, barra de luz, touchpad como mouse, emulação de Xbox 360 / DualShock 4 e muito mais — num app leve, bonito e em português.
 
@@ -27,6 +29,7 @@ Gatilhos adaptativos, hápticos, barra de luz, touchpad como mouse, emulação d
 | 🔫 **Gatilhos adaptativos** | Resistência, arma semiautomática, rifle, arco, galope, máquina, vibração… com **gráfico da resistência ao longo do curso** e predefinições prontas (pistola, freio, acelerador, cavalgada). |
 | 🖱️ **Touchpad como mouse** | Igual ao touchpad de um notebook: um dedo move, apertar clica (lado direito = clique direito), toque leve clica, dois dedos rolam. Só vira mouse depois de **dois toques ou de segurar o dedo** — o controle vibra para confirmar e trava sozinho quando você para de usar. |
 | 💥 **Vibração e hápticos HD** | Converte a vibração do jogo — ou o som do PC, ou um **arquivo de áudio** — em hápticos de alta definição pelos atuadores do DualSense — no cabo USB e também sem fio, por Bluetooth. Padrões de teste: pulso, explosão, motor, batimento, chuva. Aviso na bandeja quando a **bateria fica fraca**. |
+| 🔊 **Som do PC no controle** | Toca o som do computador no alto-falante do DualSense (ou no fone ligado nele) sem mudar a saída de som do Windows — no cabo USB e também sem fio, por Bluetooth. |
 | 🌈 **Iluminação** | Barra de luz RGB com brilho, cor pela bateria, LEDs de jogador e LED do microfone. |
 | 🕹️ **Emulação** | Vira um controle **Xbox 360** ou **DualShock 4** (com giroscópio e touchpad) via ViGEmBus. O HidHide esconde o controle físico para evitar entradas duplicadas. |
 | ⌨️ **Teclado, mouse e macros** | Qualquer botão vira tecla, clique ou macro (`ctrl+c`, `w hold 300, wait 50, space`). Turbo por botão e cursor pelo giroscópio. |
@@ -36,6 +39,7 @@ Gatilhos adaptativos, hápticos, barra de luz, touchpad como mouse, emulação d
 | 🎯 **Perfis por jogo** | Biblioteca de jogos da **Steam, Epic e GOG**; o perfil certo entra sozinho quando o jogo abre. |
 | 🔌 **Integrações** | Servidor UDP compatível com mods de gatilhos (porta 6969), servidor de movimento **Cemuhook/DSU** para emuladores (Cemu, Dolphin, Ryujinx…) e saída **OSC** (VRChat, TouchDesigner…). |
 | ⚡ **Atalhos PS** | PS + Options/Create troca de perfil, PS + touchpad liga/desliga o mouse, PS + △ pausa o controle virtual, PS + ▲/▼ ajusta o brilho. |
+| 🪶 **Roda em segundo plano** | Fechar a janela deixa o AuroraPad na bandeja do sistema gastando pouquíssima memória; pode iniciar com o Windows direto na bandeja. |
 
 ## 📸 Telas
 
@@ -65,7 +69,7 @@ Gatilhos adaptativos, hápticos, barra de luz, touchpad como mouse, emulação d
 
 ### Instalar
 
-1. Vá em **[Releases](../../releases/latest)** e baixe **`AuroraPad-<versão>-win-x64.msi`**.
+1. Baixe **`AuroraPad-<versão>-win-x64.msi`** na pasta [`release-files`](release-files) (ou em **[Releases](../../releases/latest)**).
 2. Abra o instalador → **Avançar** → aceite a licença → pronto. Não precisa de administrador nem de .NET: ele instala em `%LOCALAPPDATA%\Programs\AuroraPad` e cria atalhos no Menu Iniciar e na Área de Trabalho.
 3. Conecte o controle por cabo ou Bluetooth — ele aparece sozinho.
 
@@ -140,13 +144,13 @@ Perfis e configurações ficam em `%APPDATA%\AuroraPad`.
 ## ⚠️ Observações
 
 - O mapeamento para teclado/mouse usa `SendInput`; alguns jogos com anticheat ignoram entrada sintética.
-- Hápticos por Bluetooth são enviados pelo relatório HID 0x32 (formato documentado pelo projeto SAxense); o alto-falante do controle por Bluetooth ainda não é suportado.
+- Por Bluetooth, os hápticos usam o relatório HID 0x32 e o som do PC no alto-falante do controle usa o relatório 0x36 (áudio Opus), sem precisar de cabo.
 - O HidHide pode exigir rodar o AuroraPad como administrador.
 
 ## 📜 Aviso legal
 
 AuroraPad é um projeto independente e **não é afiliado, endossado ou patrocinado pela Sony Interactive Entertainment**. "PlayStation", "DualSense" e "DualShock" são marcas registradas de seus respectivos donos e são citadas apenas para indicar compatibilidade. A ilustração do controle é original.
 
-Construído com [HidSharp](https://www.zer7.com/software/hidsharp), [ViGEm.Client](https://github.com/nefarius/ViGEm.NET), [Nefarius.Drivers.HidHide](https://github.com/nefarius/Nefarius.Drivers.HidHide), [NAudio](https://github.com/naudio/NAudio) e [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet).
+Construído com [HidSharp](https://www.zer7.com/software/hidsharp), [ViGEm.Client](https://github.com/nefarius/ViGEm.NET), [Nefarius.Drivers.HidHide](https://github.com/nefarius/Nefarius.Drivers.HidHide), [NAudio](https://github.com/naudio/NAudio), [Concentus](https://github.com/lostromb/concentus) e [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet).
 
 Licenciado sob a [MIT License](LICENSE).
