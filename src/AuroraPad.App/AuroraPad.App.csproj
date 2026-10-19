@@ -17,7 +17,10 @@
     <!-- Only for the tray icon (NotifyIcon); WinForms namespaces are not imported globally. -->
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>AuroraPad</AssemblyName>
-    <Version>0.1.0</Version>
+    <Version>1.2.0</Version>
+    <ApplicationIcon>..\..\assets\aurorapad.ico</ApplicationIcon>
+    <Product>AuroraPad</Product>
+    <Description>DualSense, DualSense Edge and DualShock 4 companion for Windows</Description>
   </PropertyGroup>
 
   <ItemGroup>

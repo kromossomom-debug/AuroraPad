@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/aurorapad-256.png" alt="AuroraPad" width="120" />
+
 # 🌌 AuroraPad
 
 **Leve o seu DualSense para o PC de verdade.**
@@ -61,19 +63,41 @@ Gatilhos adaptativos, hápticos, barra de luz, touchpad como mouse, emulação d
 
 ## 🚀 Começando
 
-1. Baixe a versão mais recente em **Releases** (ou compile, veja abaixo) e rode `AuroraPad.exe`. Não precisa instalar o .NET.
-2. Conecte o controle por cabo ou Bluetooth — ele aparece sozinho.
-3. Opcional, para emular Xbox 360 / DualShock 4: instale o [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases) (o app tem um botão para isso).
-4. Opcional, para esconder o controle físico dos jogos: instale o [HidHide](https://github.com/nefarius/HidHide/releases).
+### Instalar
 
-### Compilar
+1. Vá em **[Releases](../../releases/latest)** e baixe **`AuroraPad-<versão>-win-x64.msi`**.
+2. Abra o instalador → **Avançar** → aceite a licença → pronto. Não precisa de administrador nem de .NET: ele instala em `%LOCALAPPDATA%\Programs\AuroraPad` e cria atalhos no Menu Iniciar e na Área de Trabalho.
+3. Conecte o controle por cabo ou Bluetooth — ele aparece sozinho.
 
-Requer o [.NET 9 SDK](https://dotnet.microsoft.com/download).
+> Prefere sem instalar? Baixe **`AuroraPad-<versão>-win-x64-portable.zip`**, extraia e rode `AuroraPad.exe`.
+>
+> O Windows pode mostrar o aviso do SmartScreen porque o instalador não tem assinatura digital paga: clique em **Mais informações → Executar assim mesmo**.
 
-```bash
-dotnet publish src/AuroraPad.App -c Release -r win-x64 --self-contained true -o publish
+Para desinstalar: **Configurações → Aplicativos → AuroraPad → Desinstalar** (perfis ficam em `%APPDATA%\AuroraPad`).
+
+**Opcionais**
+- Emular Xbox 360 / DualShock 4: instale o [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases) (o app tem um botão para isso).
+- Esconder o controle físico dos jogos: instale o [HidHide](https://github.com/nefarius/HidHide/releases).
+
+### Compilar e gerar o instalador
+
+Requer o [.NET 9 SDK](https://dotnet.microsoft.com/download). O WiX Toolset vem pelo NuGet, sem instalar nada.
+
+```powershell
+.\build-installer.ps1                  # versão do projeto
+.\build-installer.ps1 -Version 1.3.0   # ou uma versão específica
 ```
 
+Os arquivos saem em `artifacts\installer\*.msi` e `artifacts\*-portable.zip`.
+
+### Publicar uma versão no GitHub
+
+O workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) gera o instalador e cria a Release sozinho quando uma tag de versão é enviada:
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0
+```
 ## 🔌 API UDP para mods
 
 Envie JSON para `127.0.0.1:6969` (formato compatível com mods de gatilhos adaptativos já existentes):
@@ -107,6 +131,8 @@ src/
 └─ AuroraPad.App    interface WPF, desenho do controle, traduções (PT/EN/ES)
 tools/
 └─ AuroraPad.Probe  testes no hardware: dsu, osc, haptics, tree, library, macro, hidhide
+installer/          instalador MSI (WiX Toolset) — gerado por build-installer.ps1
+assets/             ícone do app
 ```
 
 Perfis e configurações ficam em `%APPDATA%\AuroraPad`.

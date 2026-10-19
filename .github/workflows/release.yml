@@ -1,0 +1,44 @@
+# Builds the installer and the portable zip, and attaches them to a GitHub Release
+# whenever a version tag is pushed, e.g.:  git tag v1.2.0 && git push origin v1.2.0
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Build installer and portable zip
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { $version = $null }
+          if ($version) { ./build-installer.ps1 -Version $version } else { ./build-installer.ps1 }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AuroraPad
+          path: |
+            artifacts/installer/*.msi
+            artifacts/*.zip
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/installer/*.msi
+            artifacts/*.zip
+          generate_release_notes: true

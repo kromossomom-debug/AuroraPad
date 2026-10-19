@@ -1,0 +1,23 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <!-- Builds AuroraPad-<version>-win-x64.msi from the single-file publish in ..\artifacts\app.
+       Build with: dotnet build installer -c Release -p:AppVersion=1.2.0 -->
+  <PropertyGroup>
+    <AppVersion Condition="'$(AppVersion)' == ''">1.2.0</AppVersion>
+    <OutputName>AuroraPad-$(AppVersion)-win-x64</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <Cultures>pt-BR</Cultures>
+    <AppDir Condition="'$(AppDir)' == ''">$(MSBuildThisFileDirectory)..\artifacts\app</AppDir>
+    <DefineConstants>AppVersion=$(AppVersion);AppDir=$(AppDir);AssetsDir=$(MSBuildThisFileDirectory)..\assets</DefineConstants>
+    <OutputPath>$(MSBuildThisFileDirectory)..\artifacts\installer\</OutputPath>
+    <!-- ICE69: shortcuts point at the exe in another component of the same feature (fine).
+         ICE91: per-user install folder, expected for a per-user package. -->
+    <SuppressIces>ICE69;ICE91</SuppressIces>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+</Project>
