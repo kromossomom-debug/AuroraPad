@@ -129,6 +129,13 @@ public sealed class DualSenseDevice : IDisposable
         Disconnected?.Invoke(this);
     }
 
+    /// <summary>Sends a raw output report (e.g. Bluetooth haptics 0x32), serialized with the state reports.</summary>
+    public void WriteReport(byte[] report)
+    {
+        if (!IsConnected) return;
+        lock (_writeLock) _stream.Write(report);
+    }
+
     /// <summary>Mark output as changed; it is sent on the next tick.</summary>
     public void MarkOutputDirty() => _outputDirty = true;
 

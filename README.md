@@ -24,7 +24,7 @@ Gatilhos adaptativos, hápticos, barra de luz, touchpad como mouse, emulação d
 | 🎮 **Controle ao vivo** | Um DualSense desenhado na tela reage a tudo: botões acendem, analógicos se mexem, gatilhos enchem conforme a pressão, o touchpad mostra seus dedos e a barra de luz mostra a cor real. |
 | 🔫 **Gatilhos adaptativos** | Resistência, arma semiautomática, rifle, arco, galope, máquina, vibração… com **gráfico da resistência ao longo do curso** e predefinições prontas (pistola, freio, acelerador, cavalgada). |
 | 🖱️ **Touchpad como mouse** | Igual ao touchpad de um notebook: um dedo move, apertar clica (lado direito = clique direito), toque leve clica, dois dedos rolam. Só vira mouse depois de **dois toques ou de segurar o dedo** — o controle vibra para confirmar e trava sozinho quando você para de usar. |
-| 💥 **Vibração e hápticos HD** | Converte a vibração do jogo — ou o som do PC, ou um **arquivo de áudio** — em hápticos de alta definição pelos atuadores do DualSense (USB). Padrões de teste: pulso, explosão, motor, batimento, chuva. Aviso na bandeja quando a **bateria fica fraca**. |
+| 💥 **Vibração e hápticos HD** | Converte a vibração do jogo — ou o som do PC, ou um **arquivo de áudio** — em hápticos de alta definição pelos atuadores do DualSense — no cabo USB e também sem fio, por Bluetooth. Padrões de teste: pulso, explosão, motor, batimento, chuva. Aviso na bandeja quando a **bateria fica fraca**. |
 | 🌈 **Iluminação** | Barra de luz RGB com brilho, cor pela bateria, LEDs de jogador e LED do microfone. |
 | 🕹️ **Emulação** | Vira um controle **Xbox 360** ou **DualShock 4** (com giroscópio e touchpad) via ViGEmBus. O HidHide esconde o controle físico para evitar entradas duplicadas. |
 | ⌨️ **Teclado, mouse e macros** | Qualquer botão vira tecla, clique ou macro (`ctrl+c`, `w hold 300, wait 50, space`). Turbo por botão e cursor pelo giroscópio. |
@@ -55,8 +55,8 @@ Gatilhos adaptativos, hápticos, barra de luz, touchpad como mouse, emulação d
 
 | Controle | USB | Bluetooth | Gatilhos adaptativos | Hápticos por áudio |
 |---|:---:|:---:|:---:|:---:|
-| DualSense (PS5) | ✅ | ✅ | ✅ | ✅ (USB) |
-| DualSense Edge | ✅ | ✅ | ✅ | ✅ (USB) |
+| DualSense (PS5) | ✅ | ✅ | ✅ | ✅ (USB e Bluetooth) |
+| DualSense Edge | ✅ | ✅ | ✅ | ✅ (USB e Bluetooth) |
 | DualShock 4 (PS4) | ✅ | ✅ | — | — |
 
 ## 🚀 Começando
@@ -114,7 +114,7 @@ Perfis e configurações ficam em `%APPDATA%\AuroraPad`.
 ## ⚠️ Observações
 
 - O mapeamento para teclado/mouse usa `SendInput`; alguns jogos com anticheat ignoram entrada sintética.
-- Hápticos por áudio dependem da placa de som USB do DualSense — por Bluetooth só a vibração clássica funciona.
+- Hápticos por Bluetooth são enviados pelo relatório HID 0x32 (formato documentado pelo projeto SAxense); o alto-falante do controle por Bluetooth ainda não é suportado.
 - O HidHide pode exigir rodar o AuroraPad como administrador.
 
 ## 📜 Aviso legal

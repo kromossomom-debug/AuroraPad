@@ -354,36 +354,45 @@ public sealed class ControllerSession : IDisposable
 
     public bool ShiftActive => _mapping.ShiftActive;
 
-    /// <summary>Plays an audio file through the DualSense actuators (USB only). Returns an error or null.</summary>
+    /// <summary>Plays an audio file through the DualSense actuators (USB or Bluetooth). Returns an error or null.</summary>
     public string? PlayHapticsFile(string path)
     {
         if (Device.IsDualShock4) return "o DualShock 4 não tem hápticos";
-        if (Device.Connection != ConnectionType.Usb) return "hápticos por áudio só funcionam por USB";
         if (_haptics == null)
         {
-            _haptics = Haptics.HapticsEngine.TryCreate(Index, out var err);
+            _haptics = CreateHapticsEngine(out var err);
             if (_haptics == null) return err;
             _haptics.Configure(Profile.HapticsMode, Profile.HapticsGain / 100.0, Profile.HapticsLowPassHz);
         }
         return _haptics.PlayFile(path);
     }
 
+    /// <summary>USB: the controller's sound card. Bluetooth: HID report 0x32 streamed by the app.</summary>
+    private Haptics.HapticsEngine? CreateHapticsEngine(out string? error)
+    {
+        if (Device.Connection == ConnectionType.Bluetooth)
+        {
+            error = null;
+            return Haptics.HapticsEngine.CreateBluetooth(Device.WriteReport, "DualSense (Bluetooth)");
+        }
+        return Haptics.HapticsEngine.TryCreate(Index, out error);
+    }
+
     private void ApplyHaptics()
     {
         var p = Profile;
-        bool want = p.HapticsMode != Haptics.HapticsMode.Off && !Device.IsDualShock4 && Device.Connection == ConnectionType.Usb;
+        bool want = p.HapticsMode != Haptics.HapticsMode.Off && !Device.IsDualShock4;
         if (!want)
         {
             if (p.HapticsMode == Haptics.HapticsMode.Off && _haptics != null) { _haptics.Configure(Haptics.HapticsMode.Off, 1, 200); HapticsError = null; return; }
             _haptics?.Dispose();
             _haptics = null;
-            HapticsError = p.HapticsMode == Haptics.HapticsMode.Off ? null
-                : Device.IsDualShock4 ? "o DualShock 4 não tem hápticos" : "hápticos por áudio só funcionam por USB";
+            HapticsError = p.HapticsMode == Haptics.HapticsMode.Off ? null : "o DualShock 4 não tem hápticos";
             return;
         }
         if (_haptics == null)
         {
-            _haptics = Haptics.HapticsEngine.TryCreate(Index, out var err);
+            _haptics = CreateHapticsEngine(out var err);
             HapticsError = err;
         }
         _haptics?.Configure(p.HapticsMode, p.HapticsGain / 100.0, p.HapticsLowPassHz);

@@ -11,12 +11,16 @@ public enum HapticsMode { Off, RumbleToHaptics, AudioToHaptics, Both }
 /// Drives the DualSense voice-coil actuators through its USB audio interface: the controller
 /// is a 4-channel playback device and channels 3/4 feed the left/right haptic actuators.
 /// Sources: synthetic waves from game rumble, and/or low-passed system audio (loopback).
-/// Only works over USB; over Bluetooth the controller has no audio endpoint.
+/// Over Bluetooth there is no audio endpoint, so the same mix is down-sampled to 3 kHz and sent as
+/// HID output report 0x32 (format documented by the SAxense proof of concept).
 /// </summary>
 public sealed class HapticsEngine : IDisposable
 {
-    private readonly MMDevice _device;
-    private readonly WasapiOut _out;
+    private readonly MMDevice? _device;
+    private readonly WasapiOut? _out;
+    private readonly Thread? _btThread;
+    private readonly Action<byte[]>? _btWrite;
+    private volatile bool _stopped;
     private readonly HapticsMixer _mixer;
     private WasapiLoopbackCapture? _loopback;
     private BufferedWaveProvider? _loopBuffer;
@@ -43,6 +47,74 @@ public sealed class HapticsEngine : IDisposable
     }
 
     public string MixFormatDescription { get; }
+
+    /// <summary>True when this engine streams over Bluetooth HID instead of the USB sound card.</summary>
+    public bool IsBluetooth => _btWrite != null;
+
+    // ---- Bluetooth backend -------------------------------------------------------
+
+    private const int BtSampleRate = 3000;
+    private const int BtFramesPerReport = 32;         // 32 stereo frames = 64 bytes = 10.67 ms
+    private const int BtReportSize = 141;
+
+    private HapticsEngine(Action<byte[]> writeReport, string name)
+    {
+        _btWrite = writeReport;
+        DeviceName = name;
+        MixFormatDescription = "Bluetooth HID 0x32, 8-bit stereo @ 3 kHz";
+        _mixer = new HapticsMixer(BtSampleRate, 4);
+        _btThread = new Thread(BluetoothLoop) { IsBackground = true, Name = "Bluetooth haptics", Priority = ThreadPriority.AboveNormal };
+        _btThread.Start();
+    }
+
+    /// <summary>Haptics for a DualSense connected over Bluetooth; <paramref name="writeReport"/> sends a raw output report.</summary>
+    public static HapticsEngine CreateBluetooth(Action<byte[]> writeReport, string name) => new(writeReport, name);
+
+    [System.Runtime.InteropServices.DllImport("winmm.dll")] private static extern uint timeBeginPeriod(uint ms);
+    [System.Runtime.InteropServices.DllImport("winmm.dll")] private static extern uint timeEndPeriod(uint ms);
+
+    private void BluetoothLoop()
+    {
+        // Report layout: [0]=0x32, [1]=seq<<4 | tag, then packets {header(pid | 0x80 "sized"), length, data}:
+        //   0x11 (7 bytes): FE 00 00 00 00 FF <counter>, 0x12 (64 bytes): interleaved signed 8-bit L/R samples,
+        // zero padding, and CRC-32 (seeded with 0xA2) over bytes 0..136 stored little-endian at 137.
+        var report = new byte[BtReportSize];
+        var frames = new float[BtFramesPerReport * 4];
+        byte seq = 0, counter = 0;
+        double period = BtFramesPerReport * 1000.0 / BtSampleRate;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        double next = 0;
+        timeBeginPeriod(1);
+        try
+        {
+            while (!_stopped)
+            {
+                _mixer.Read(frames, 0, frames.Length);
+                Array.Clear(report);
+                report[0] = 0x32;
+                report[1] = (byte)(seq << 4);
+                seq = (byte)((seq + 1) & 0x0F);
+                report[2] = 0x80 | 0x11; report[3] = 7;
+                report[4] = 0xFE; report[9] = 0xFF; report[10] = counter++;
+                report[11] = 0x80 | 0x12; report[12] = 64;
+                for (int i = 0; i < BtFramesPerReport; i++)
+                {
+                    report[13 + i * 2] = (byte)(sbyte)Math.Clamp(frames[i * 4 + 2] * 127f, -127f, 127f); // left actuator
+                    report[14 + i * 2] = (byte)(sbyte)Math.Clamp(frames[i * 4 + 3] * 127f, -127f, 127f); // right actuator
+                }
+                uint crc = Protocol.Crc32.Compute(0xA2, report.AsSpan(0, BtReportSize - 4));
+                System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(report.AsSpan(BtReportSize - 4), crc);
+                try { _btWrite!(report); } catch { /* controller asleep or link busy: drop this block */ }
+
+                next += period;
+                double wait = next - clock.Elapsed.TotalMilliseconds;
+                if (wait > 1.5) Thread.Sleep((int)(wait - 1));
+                while (clock.Elapsed.TotalMilliseconds < next) Thread.SpinWait(50);
+                if (clock.Elapsed.TotalMilliseconds - next > 100) next = clock.Elapsed.TotalMilliseconds; // resync after a stall
+            }
+        }
+        finally { timeEndPeriod(1); }
+    }
 
     /// <summary>Converts float samples to the device mix format (32-bit float or 16/24-bit PCM).</summary>
     private sealed class NativeFormatProvider(ISampleProvider source, WaveFormat format) : IWaveProvider
@@ -171,10 +243,12 @@ public sealed class HapticsEngine : IDisposable
 
     public void Dispose()
     {
+        _stopped = true;
         StopLoopback();
-        try { _out.Stop(); } catch { }
-        _out.Dispose();
-        _device.Dispose();
+        _btThread?.Join(200);
+        try { _out?.Stop(); } catch { }
+        _out?.Dispose();
+        _device?.Dispose();
     }
 
     /// <summary>Averages all channels of a source into mono.</summary>
@@ -235,7 +309,8 @@ public sealed class HapticsEngine : IDisposable
 
         public void SetLowPass(int hz)
         {
-            lock (_lock) _lowPass = BiQuadFilter.LowPassFilter(WaveFormat.SampleRate, Math.Clamp(hz, 40, 1000), 0.707f);
+            // Keep the cut-off below Nyquist (the Bluetooth stream runs at only 3 kHz).
+            lock (_lock) _lowPass = BiQuadFilter.LowPassFilter(WaveFormat.SampleRate, Math.Clamp(hz, 40, Math.Min(1000, WaveFormat.SampleRate / 2 - 100)), 0.707f);
         }
 
         public int Read(float[] buffer, int offset, int count)

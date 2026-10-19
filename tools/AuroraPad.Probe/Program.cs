@@ -48,6 +48,31 @@ if (args.Length > 0 && args[0] == "latency")
     return 0;
 }
 
+// "bthaptics": Bluetooth haptics report generator against a fake controller (nothing is sent).
+if (args.Length > 0 && args[0] == "bthaptics")
+{
+    var btReports = new List<(double Ms, byte[] Data)>();
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    var engine = AuroraPad.Core.Haptics.HapticsEngine.CreateBluetooth(r => { lock (btReports) btReports.Add((sw.Elapsed.TotalMilliseconds, (byte[])r.Clone())); }, "fake");
+    engine.Configure(AuroraPad.Core.Haptics.HapticsMode.RumbleToHaptics, 1.0, 200);
+    engine.SetRumble(255, 128);
+    Thread.Sleep(1000);
+    engine.Dispose();
+    List<(double Ms, byte[] Data)> got; lock (btReports) got = btReports.ToList();
+    var r0 = got[^1].Data;
+    // Recompute the CRC the way the controller checks it: CRC-32 over 0xA2 + bytes 0..136.
+    uint crc = 0xFFFFFFFF;
+    foreach (var b in new byte[] { 0xA2 }.Concat(r0.Take(137))) { crc ^= b; for (int k = 0; k < 8; k++) crc = (crc & 1) != 0 ? 0xEDB88320 ^ (crc >> 1) : crc >> 1; }
+    crc = ~crc;
+    var intervals = got.Zip(got.Skip(1), (a, b) => b.Ms - a.Ms).ToList();
+    var samples = r0.Skip(13).Take(64).Select(b => (int)(sbyte)b).ToArray();
+    Console.WriteLine($"reports in 1 s: {got.Count} (expected ~94), size {r0.Length}, id 0x{r0[0]:X2}");
+    Console.WriteLine($"header: {Convert.ToHexString(r0, 1, 12)}  (seq nibble, 0x91 07 FE 00 00 00 00 FF ctr, 0x92 40)");
+    Console.WriteLine($"interval avg {intervals.Average():F2} ms, min {intervals.Min():F2}, max {intervals.Max():F2}");
+    Console.WriteLine($"samples L/R range: {samples.Min()}..{samples.Max()}  first 8: {string.Join(",", samples.Take(8))}");
+    Console.WriteLine($"CRC ok: {BitConverter.ToUInt32(r0, 137) == crc}");
+    return 0;
+}
 // "touchgate": simulated touches through the touchpad mouse lock; no real input is sent.
 if (args.Length > 0 && args[0] == "touchgate")
 {
@@ -58,25 +83,31 @@ if (args.Length > 0 && args[0] == "touchgate")
     tp.ActiveChanged += on => Console.WriteLine($"   -> touchpad mouse {(on ? "ATIVO" : "travado")}");
     var sw = System.Diagnostics.Stopwatch.StartNew();
     ushort x = 900;
+    int jitter = int.TryParse(Environment.GetEnvironmentVariable("JITTER"), out var jv) ? jv : 0;
+    var rnd = new Random(1);
+    Console.WriteLine($"(tremor simulado: ±{jitter} unidades por leitura)");
     void Feed(bool touching, int ms, bool moving = false, bool click = false)
     {
         var end = sw.Elapsed.TotalMilliseconds + ms;
         while (sw.Elapsed.TotalMilliseconds < end)
         {
             if (moving) x += 6;
-            var inp = new DualSenseInput { Touch1 = new TouchPoint(touching, 1, x, 500), Buttons = click ? DualSenseButtons.Touchpad : DualSenseButtons.None };
+            // Real fingers are never perfectly still: a few units of jitter on every report (env JITTER).
+            int j = jitter == 0 ? 0 : rnd.Next(-jitter, jitter + 1);
+            var inp = new DualSenseInput { Touch1 = new TouchPoint(touching, 1, (ushort)(x + j), (ushort)(500 + rnd.Next(-jitter, jitter + 1))), Buttons = click ? DualSenseButtons.Touchpad : DualSenseButtons.None };
             tp.Process(inp, settings, sw.Elapsed.TotalSeconds);
             Thread.Sleep(4);
         }
     }
     Console.WriteLine("1) Deslizar com o touchpad travado:"); sent = 0; Feed(true, 200, true); Feed(false, 50); Console.WriteLine($"   eventos de mouse: {sent}");
-    Console.WriteLine("2) Dois toques rápidos:"); Feed(true, 60); Feed(false, 100); Feed(true, 60); Feed(false, 100);
+    Console.WriteLine("2) Dois toques (140 ms cada, 180 ms entre eles):"); sent = 0; Feed(true, 140); Feed(false, 180); Feed(true, 140); Feed(false, 100); Console.WriteLine($"   cliques/eventos indesejados: {sent}");
     Console.WriteLine("3) Deslizar com ele ativo:"); sent = 0; Feed(true, 200, true); Feed(false, 50); Console.WriteLine($"   eventos de mouse: {sent}");
     Console.WriteLine("4) Ficar 1,3 s sem tocar:"); Feed(false, 1300);
-    Console.WriteLine("5) Segurar o dedo parado 700 ms:"); Feed(true, 700); Feed(false, 50);
+    Console.WriteLine("5) Segurar o dedo 700 ms e já deslizar:"); sent = 0; Feed(true, 700); Feed(true, 200, true); Feed(false, 50); Console.WriteLine($"   eventos de mouse ao deslizar: {sent}");
     Console.WriteLine("6) Segurar o clique do touchpad 5,2 s:"); Feed(true, 5200, click: true);
     Console.WriteLine("7) Soltar o clique mas deixar o dedo apoiado 1 s (não pode religar):"); Feed(true, 1000);
-    Console.WriteLine("8) Tirar o dedo e dar dois toques:"); Feed(false, 100); Feed(true, 60); Feed(false, 100); Feed(true, 60); Feed(false, 100);
+    Console.WriteLine("8) Tirar o dedo e dar dois toques:"); Feed(false, 100); Feed(true, 140); Feed(false, 180); Feed(true, 140); Feed(false, 100);
+    Console.WriteLine("9) Um toque só com ele ativo (deve clicar):"); sent = 0; Feed(true, 140); Feed(false, 100); Console.WriteLine($"   eventos (2 = clique descer+subir): {sent}");
     AuroraPad.Core.Mapping.InputSimulator.TestSink = null;
     return 0;
 }

@@ -50,14 +50,19 @@ public sealed class TouchpadMouseSettings
 /// </summary>
 public sealed class TouchpadMouse
 {
-    private const double TapMaxSeconds = 0.18;
-    private const int TapMaxTravel = 40;
-    private const double DoubleTapWindow = 0.35;
+    // Human taps last ~80-250 ms; the second tap of a double tap follows within ~0.4 s.
+    private const double TapMaxSeconds = 0.25;
+    // Distance (touchpad units, pad is 1920 wide) from where the finger landed that still counts as
+    // "not moving". Measured from the landing point, not summed per report: a resting finger jitters
+    // a few units on every one of the 250 reports per second.
+    private const int StillRadius = 70;
+    private const double DoubleTapWindow = 0.45;
 
     private TouchPoint _last1, _last2;
     private double _remX, _remY, _scrollRem;
     private double _touchStart;
-    private int _travel;
+    private int _travel;          // largest distance from the landing point during this touch
+    private int _startX, _startY;
     private int _maxFingers;
     private MappingTarget? _heldButton;
 
@@ -89,11 +94,13 @@ public sealed class TouchpadMouse
         {
             _touchStart = now;
             _travel = 0;
+            _startX = t1.Active ? t1.X : t2.X;
+            _startY = t1.Active ? t1.Y : t2.Y;
             _maxFingers = fingers;
         }
         _maxFingers = Math.Max(_maxFingers, fingers);
-        if (fingers == 1 && t1.Active && _last1.Active && t1.Id == _last1.Id)
-            _travel += Math.Abs(t1.X - _last1.X) + Math.Abs(t1.Y - _last1.Y);
+        if (fingers >= 1 && t1.Active)
+            _travel = Math.Max(_travel, Math.Abs(t1.X - _startX) + Math.Abs(t1.Y - _startY));
         if (fingers > 0 || pressed) _lastActivity = now;
 
         if (pressed && _pressStart < 0) _pressStart = now;
@@ -119,7 +126,7 @@ public sealed class TouchpadMouse
         }
 
         bool tapEnded = fingers == 0 && wasTouching && !pressed
-                        && now - _touchStart < TapMaxSeconds && _travel < TapMaxTravel;
+                        && now - _touchStart < TapMaxSeconds && _travel < StillRadius;
 
         // ---- Lock / unlock ------------------------------------------------------
         var activation = s.Activation == TouchpadActivation.AlwaysOn && _manualLocked ? TouchpadActivation.DoubleTapOrHold : s.Activation;
@@ -138,13 +145,16 @@ public sealed class TouchpadMouse
                 {
                     Unlock(now);
                     _lastTapEnd = double.NegativeInfinity;
+                    // The second tap only unlocks; it must not also click.
+                    _last1 = t1; _last2 = t2;
+                    return true;
                 }
                 else _lastTapEnd = now;
             }
-            if (viaHold && fingers == 1 && !pressed && now - _touchStart >= Math.Max(150, s.HoldMs) / 1000.0 && _travel < TapMaxTravel)
+            if (viaHold && fingers == 1 && !pressed && now - _touchStart >= Math.Max(150, s.HoldMs) / 1000.0 && _travel < StillRadius)
             {
+                // The resting finger can start sliding right away; a hold is never a tap, so no stray click.
                 Unlock(now);
-                _ignoreUntilLift = true;
             }
             if (!_unlocked)
             {
@@ -190,7 +200,9 @@ public sealed class TouchpadMouse
         }
 
         // ---- Movement / scrolling ---------------------------------------------
-        if (fingers == 1 && t1.Active && _last1.Active && t1.Id == _last1.Id && !_last2.Active)
+        // Slop: the cursor only starts moving once the finger has really travelled, so taps and a
+        // resting finger's jitter never nudge it (laptop trackpads do the same).
+        if (fingers == 1 && t1.Active && _last1.Active && t1.Id == _last1.Id && !_last2.Active && _travel >= 15)
         {
             int dx = t1.X - _last1.X, dy = t1.Y - _last1.Y;
             double dist = Math.Sqrt(dx * dx + dy * dy);
@@ -206,7 +218,7 @@ public sealed class TouchpadMouse
         else if (fingers == 2 && s.TwoFingerScroll && _last1.Active && _last2.Active)
         {
             int dy = ((t1.Y - _last1.Y) + (t2.Y - _last2.Y)) / 2;
-            _travel += Math.Abs(dy);
+            _travel = Math.Max(_travel, StillRadius); // scrolling is never a tap
             // ~60 touchpad units per wheel notch; natural direction unless inverted.
             _scrollRem += (s.InvertScroll ? dy : -dy) / 60.0;
             int notches = (int)_scrollRem;
