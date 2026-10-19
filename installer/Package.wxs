@@ -44,21 +44,43 @@
                   Target="[#AuroraPadExe]" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
         <RegistryValue Root="HKCU" Key="Software\AuroraPad" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="DesktopShortcutGroup">
       <Component Id="DesktopShortcut" Directory="DesktopFolder">
         <Shortcut Id="DesktopShortcut" Name="AuroraPad" Description="Controles PlayStation no Windows"
                   Target="[#AuroraPadExe]" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
         <RegistryValue Root="HKCU" Key="Software\AuroraPad" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
-      <!-- Remove the "start with Windows" entry the app may have created. -->
-      <Component Id="CleanupAutoStart" Directory="INSTALLFOLDER">
-        <RegistryValue Root="HKCU" Key="Software\AuroraPad" Name="Cleanup" Type="integer" Value="1" KeyPath="yes" />
-        <RemoveRegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="AuroraPad" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="AutoStartGroup">
+      <!-- Starts AuroraPad hidden in the tray at sign-in (same entry the app's own setting uses). -->
+      <Component Id="AutoStart" Directory="INSTALLFOLDER">
+        <RegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="AuroraPad" Type="string"
+                       Value="&quot;[INSTALLFOLDER]AuroraPad.exe&quot; --background" KeyPath="yes" />
       </Component>
     </ComponentGroup>
 
-    <Feature Id="Main" Title="AuroraPad" Level="1">
+    <ComponentGroup Id="CleanupGroup">
+      <!-- Remove the "start with Windows" entry the app may have created. -->
+      <Component Id="CleanupAutoStart" Directory="INSTALLFOLDER">
+        <RegistryValue Root="HKCU" Key="Software\AuroraPad" Name="Cleanup" Type="integer" Value="1" KeyPath="yes" />
+        <RegistryValue Root="HKCU" Key="Software\AuroraPad" Name="Installed" Type="integer" Value="1" />
+      </Component>
+    </ComponentGroup>
+
+    <Feature Id="Main" Title="AuroraPad" Description="O programa e o atalho no Menu Iniciar." Level="1" AllowAbsent="no" Display="expand">
       <ComponentGroupRef Id="AppFiles" />
       <ComponentGroupRef Id="Shortcuts" />
+      <ComponentGroupRef Id="CleanupGroup" />
+      <Feature Id="Desktop" Title="Atalho na Área de Trabalho" Description="Cria um atalho do AuroraPad na Área de Trabalho." Level="1">
+        <ComponentGroupRef Id="DesktopShortcutGroup" />
+      </Feature>
+      <Feature Id="Background" Title="Iniciar com o Windows em segundo plano"
+               Description="Abre o AuroraPad escondido na bandeja (perto do relógio) quando você entra no Windows, usando pouca memória. Pode ser mudado depois em Configurações." Level="1">
+        <ComponentGroupRef Id="AutoStartGroup" />
+      </Feature>
     </Feature>
 
     <!-- Close a running AuroraPad before files are replaced or removed. -->
@@ -70,7 +92,7 @@
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
     <Property Id="WixShellExecTarget" Value="[#AuroraPadExe]" />
     <CustomAction Id="LaunchAuroraPad" BinaryRef="Wix4UtilCA_X64" DllEntry="WixShellExec" Impersonate="yes" />
-    <ui:WixUI Id="WixUI_Minimal" />
+    <ui:WixUI Id="WixUI_FeatureTree" />
     <UI>
       <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchAuroraPad"
                Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed" />

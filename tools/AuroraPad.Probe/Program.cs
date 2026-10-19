@@ -48,6 +48,38 @@ if (args.Length > 0 && args[0] == "latency")
     return 0;
 }
 
+// "inputlog [seconds]": read-only dump of what the controller sends (rate, report type, touch events).
+if (args.Length > 0 && args[0] == "inputlog")
+{
+    int secs = args.Length > 1 ? int.Parse(args[1]) : 5;
+    using var mgr = new DeviceManager();
+    mgr.Start();
+    Thread.Sleep(500);
+    if (mgr.Devices.Count == 0) { Console.WriteLine("no controller"); return 1; }
+    var ctl = mgr.Devices[0];
+    Console.WriteLine($"{ctl.Model} via {ctl.Connection}");
+    int n = 0; var sw = System.Diagnostics.Stopwatch.StartNew();
+    bool lastT = false; DualSenseInput? last = null;
+    var events = new List<string>();
+    ctl.InputReceived += (_, i) =>
+    {
+        n++; last = i;
+        if (i.Touch1.Active != lastT)
+        {
+            lock (events) events.Add($"{sw.Elapsed.TotalMilliseconds,7:F0}ms touch {(i.Touch1.Active ? "DOWN" : "up  ")} at ({i.Touch1.X},{i.Touch1.Y}) id={i.Touch1.Id} click={i.IsPressed(DualSenseButtons.Touchpad)}");
+            lastT = i.Touch1.Active;
+        }
+    };
+    Thread.Sleep(secs * 1000);
+    var l = last!;
+    Console.WriteLine($"reports/s: {n / (double)secs:F0}");
+    Console.WriteLine($"LS=({l.LeftX},{l.LeftY}) RS=({l.RightX},{l.RightY}) L2={l.L2} R2={l.R2} buttons={l.Buttons}");
+    Console.WriteLine($"gyro=({l.GyroX},{l.GyroY},{l.GyroZ}) accel=({l.AccelX},{l.AccelY},{l.AccelZ}) battery={l.BatteryPercent}% {l.Charging}");
+    Console.WriteLine($"touch1={l.Touch1} touch2={l.Touch2}");
+    lock (events) foreach (var e in events.Take(60)) Console.WriteLine(e);
+    return 0;
+}
+
 // "bthaptics": Bluetooth haptics report generator against a fake controller (nothing is sent).
 if (args.Length > 0 && args[0] == "bthaptics")
 {

@@ -48,10 +48,12 @@ public sealed partial class ControllerViewModel : ObservableObject
     private void RefreshIllustration(DualSenseInput i)
     {
         const double travel = 14, cap = 21;
-        LCapLeft = 228 + (i.LeftX - 127.5) / 127.5 * travel - cap;
-        LCapTop = 212 + (i.LeftY - 127.5) / 127.5 * travel - cap;
-        RCapLeft = 372 + (i.RightX - 127.5) / 127.5 * travel - cap;
-        RCapTop = 212 + (i.RightY - 127.5) / 127.5 * travel - cap;
+        // Rounded to half a pixel so invisible sensor noise does not force a redraw every frame.
+        static double Half(double v) => Math.Round(v * 2) / 2;
+        LCapLeft = Half(228 + (i.LeftX - 127.5) / 127.5 * travel - cap);
+        LCapTop = Half(212 + (i.LeftY - 127.5) / 127.5 * travel - cap);
+        RCapLeft = Half(372 + (i.RightX - 127.5) / 127.5 * travel - cap);
+        RCapTop = Half(212 + (i.RightY - 127.5) / 127.5 * travel - cap);
         L2Height = i.L2 / 255.0 * 30;
         R2Height = i.R2 / 255.0 * 30;
         T1Left = 215 + i.Touch1.X / 1920.0 * 170 - 6; T1Top = 56 + i.Touch1.Y / 1080.0 * 96 - 6;

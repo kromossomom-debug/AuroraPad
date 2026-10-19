@@ -101,6 +101,13 @@ public sealed class AppSettings
     /// <summary>Tray notification when a controller's battery drops to 20% and 10%.</summary>
     public bool LowBatteryAlert { get; set; } = true;
 
+    // Last window placement (device-independent units); null = choose automatically.
+    public double? WindowLeft { get; set; }
+    public double? WindowTop { get; set; }
+    public double? WindowWidth { get; set; }
+    public double? WindowHeight { get; set; }
+    public bool? WindowMaximized { get; set; }
+
     public bool UseOsc { get; set; }
     public string OscAddress { get; set; } = "127.0.0.1";
     public int OscPort { get; set; } = 8000;

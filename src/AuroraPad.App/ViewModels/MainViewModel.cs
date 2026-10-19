@@ -33,6 +33,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private readonly HidHideManager _hidHide = new();
     private readonly ForegroundWatcher _foreground;
     private readonly DispatcherTimer _timer;
+    private readonly DispatcherTimer _liveTimer;
     private readonly AppSettings _settings;
     private readonly List<ControllerSession> _sessions = [];
     private bool _loading;
@@ -237,9 +238,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _foreground = new ForegroundWatcher(TimeSpan.FromSeconds(1));
         _foreground.ForegroundChanged += exe => Application.Current.Dispatcher.BeginInvoke(() => OnForegroundChanged(exe));
 
-        // Live input is refreshed once per rendered frame (vsync, usually 60 Hz) so the controller
-        // drawing follows the hands with no visible delay; status text only needs a slow timer.
-        CompositionTarget.Rendering += OnRendering;
+        // Live input is refreshed ~60 times a second at render priority so the drawing follows the hands.
+        // (CompositionTarget.Rendering was not used: subscribing to it makes WPF redraw the whole window every
+        // frame even when nothing changed, which cost ~10% of a CPU core.)
+        _liveTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Render, OnRendering, Application.Current.Dispatcher);
+        _liveTimer.Start();
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) => UpdateStatus(), Application.Current.Dispatcher);
         _timer.Start();
     }
@@ -311,6 +314,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void UpdateStatus()
     {
         CheckBattery();
+        if (IsInBackground) return; // nothing on screen to update
+        UpdateMemory();
         foreach (var c in Controllers)
         {
             c.RefreshStatus();
@@ -810,7 +815,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _timer.Stop();
-        CompositionTarget.Rendering -= OnRendering;
+        _liveTimer.Stop();
         _foreground.Dispose();
         if (_manualProfile != null) _store.Save(_manualProfile);
         if (SelectedProfile != null) _store.Save(SelectedProfile);

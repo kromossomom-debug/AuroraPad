@@ -15,9 +15,9 @@ internal static class Strings
 
         ["home.title"] = "Controles", ["home.none"] = "Nenhum controle encontrado",
         ["home.noneHint"] = "Conecte um DualSense, DualSense Edge ou DualShock 4 por cabo USB ou Bluetooth. Ele aparece aqui automaticamente.",
-        ["home.battery"] = "Bateria", ["home.activeProfile"] = "Perfil ativo", ["home.activity"] = "Atividade",
+        ["home.btHint"] = "Bluetooth: segure PS + Create até a luz piscar e adicione em Configurações do Windows → Bluetooth e dispositivos → Adicionar dispositivo.", ["home.battery"] = "Bateria", ["home.activeProfile"] = "Perfil ativo", ["home.activity"] = "Atividade",
 
-        ["live.title"] = "Entrada ao vivo", ["live.connect"] = "Conecte um controle para ver as entradas.", ["live.sticks"] = "Analógicos",
+        ["live.title"] = "Entrada ao vivo", ["live.connect"] = "Nenhum controle conectado. Conecte por cabo USB ou Bluetooth e o desenho passa a mostrar seus botões, analógicos e gatilhos ao vivo.", ["live.sticks"] = "Analógicos",
         ["live.triggers"] = "Gatilhos", ["live.buttons"] = "Botões", ["live.mute"] = "Mudo", ["live.motion"] = "Sensores de movimento",
         ["live.gyro"] = "Giroscópio", ["live.accel"] = "Acelerômetro",
 
@@ -104,7 +104,7 @@ internal static class Strings
 
         ["set.title"] = "Configurações", ["set.language"] = "Idioma", ["set.languageHint"] = "A mudança de idioma vale depois de reabrir o app.",
         ["set.restart"] = "Reabra o AuroraPad para aplicar o novo idioma.", ["set.window"] = "Janela e inicialização",
-        ["set.boot"] = "Iniciar com o Windows", ["set.startMin"] = "Iniciar minimizado", ["set.tray"] = "Minimizar para a bandeja (perto do relógio)",
+        ["set.boot"] = "Iniciar com o Windows (já em segundo plano, na bandeja)", ["set.startMin"] = "Iniciar minimizado", ["set.tray"] = "Continuar rodando em segundo plano ao fechar ou minimizar (ícone perto do relógio)",
         ["set.autoProfiles"] = "Perfis por jogo", ["set.autoSwitch"] = "Trocar de perfil sozinho quando um jogo associado estiver em primeiro plano",
         ["set.foreground"] = "Programa em primeiro plano: {0}",
         ["sc.title"] = "Atalhos com o botão PS", ["sc.enable"] = "Ativar atalhos",
@@ -149,7 +149,7 @@ internal static class Strings
         ["stage.half"] = "Meio curso a partir de", ["stage.full"] = "Fim de curso a partir de",
         ["btn.l2half"] = "L2 meio curso", ["btn.l2full"] = "L2 até o fim", ["btn.r2half"] = "R2 meio curso", ["btn.r2full"] = "R2 até o fim",
         ["hap.playFile"] = "Tocar arquivo de áudio nos hápticos…", ["hap.fileFilter"] = "Áudio", ["hap.fileTitle"] = "Escolha um arquivo de áudio", ["hap.filePlaying"] = "Tocando {0}",
-        ["set.lowBattery"] = "Avisar quando a bateria do controle ficar fraca (20% e 10%)", ["battery.low"] = "Bateria fraca no {0}: {1}%",
+        ["set.backgroundHint"] = "Em segundo plano o app para de desenhar a tela e devolve a memória da interface ao Windows; controle, emulação, mapeamentos e hápticos continuam funcionando.", ["set.memory"] = "Memória em uso agora: {0} MB (privada: {1} MB)", ["set.lowBattery"] = "Avisar quando a bateria do controle ficar fraca (20% e 10%)", ["battery.low"] = "Bateria fraca no {0}: {1}%",
         ["tp.activation"] = "Como ativar", ["tp.act.both"] = "Dois toques ou segurar o dedo", ["tp.act.double"] = "Dois toques rápidos", ["tp.act.hold"] = "Segurar o dedo parado", ["tp.act.always"] = "Sempre ativo",
         ["tp.lockHold"] = "Desligar segurando o clique (s, 0 = não)", ["tp.holdMs"] = "Tempo segurando (ms)", ["tp.autoLock"] = "Travar após (s sem uso, 0 = nunca)",
         ["tp.state.on"] = "● Mouse ativo — segure o clique do touchpad para desligar", ["tp.state.off"] = "○ Travado — toque duas vezes ou segure o dedo para ativar; segure o clique para desligar",
@@ -170,7 +170,7 @@ internal static class Strings
 
         ["home.title"] = "Controllers", ["home.none"] = "No controller found",
         ["home.noneHint"] = "Connect a DualSense, DualSense Edge or DualShock 4 by USB cable or Bluetooth. It shows up here automatically.",
-        ["home.battery"] = "Battery", ["home.activeProfile"] = "Active profile", ["home.activity"] = "Activity",
+        ["home.btHint"] = "Bluetooth: hold PS + Create until the light blinks, then add it in Windows Settings → Bluetooth & devices → Add device.", ["home.battery"] = "Battery", ["home.activeProfile"] = "Active profile", ["home.activity"] = "Activity",
 
         ["live.title"] = "Live input", ["live.connect"] = "Connect a controller to see its input.", ["live.sticks"] = "Sticks",
         ["live.triggers"] = "Triggers", ["live.buttons"] = "Buttons", ["live.mute"] = "Mute", ["live.motion"] = "Motion sensors",
@@ -259,7 +259,7 @@ internal static class Strings
 
         ["set.title"] = "Settings", ["set.language"] = "Language", ["set.languageHint"] = "The new language applies after reopening the app.",
         ["set.restart"] = "Reopen AuroraPad to apply the new language.", ["set.window"] = "Window and startup",
-        ["set.boot"] = "Start with Windows", ["set.startMin"] = "Start minimised", ["set.tray"] = "Minimise to the tray (next to the clock)",
+        ["set.boot"] = "Start with Windows (straight into the background, in the tray)", ["set.startMin"] = "Start minimised", ["set.tray"] = "Keep running in the background when closed or minimised (icon next to the clock)",
         ["set.autoProfiles"] = "Per-game profiles", ["set.autoSwitch"] = "Switch profile automatically when a linked game is in the foreground",
         ["set.foreground"] = "Foreground program: {0}",
         ["sc.title"] = "PS button shortcuts", ["sc.enable"] = "Enable shortcuts",
@@ -304,7 +304,7 @@ internal static class Strings
         ["stage.half"] = "Half pull from", ["stage.full"] = "Full pull from",
         ["btn.l2half"] = "L2 half pull", ["btn.l2full"] = "L2 full pull", ["btn.r2half"] = "R2 half pull", ["btn.r2full"] = "R2 full pull",
         ["hap.playFile"] = "Play an audio file on the haptics…", ["hap.fileFilter"] = "Audio", ["hap.fileTitle"] = "Choose an audio file", ["hap.filePlaying"] = "Playing {0}",
-        ["set.lowBattery"] = "Warn when a controller's battery gets low (20% and 10%)", ["battery.low"] = "Low battery on {0}: {1}%",
+        ["set.backgroundHint"] = "In the background the app stops drawing and hands the UI memory back to Windows; controller, emulation, mappings and haptics keep working.", ["set.memory"] = "Memory in use now: {0} MB (private: {1} MB)", ["set.lowBattery"] = "Warn when a controller's battery gets low (20% and 10%)", ["battery.low"] = "Low battery on {0}: {1}%",
         ["tp.activation"] = "How to activate", ["tp.act.both"] = "Double tap or hold a finger", ["tp.act.double"] = "Quick double tap", ["tp.act.hold"] = "Hold a finger still", ["tp.act.always"] = "Always on",
         ["tp.lockHold"] = "Turn off by holding the click (s, 0 = no)", ["tp.holdMs"] = "Hold time (ms)", ["tp.autoLock"] = "Lock after (s idle, 0 = never)",
         ["tp.state.on"] = "● Mouse active — hold the touchpad click to turn it off", ["tp.state.off"] = "○ Locked — double tap or hold a finger to activate; hold the click to turn it off",
@@ -325,7 +325,7 @@ internal static class Strings
 
         ["home.title"] = "Mandos", ["home.none"] = "No se encontró ningún mando",
         ["home.noneHint"] = "Conecta un DualSense, DualSense Edge o DualShock 4 por cable USB o Bluetooth. Aparecerá aquí automáticamente.",
-        ["home.battery"] = "Batería", ["home.activeProfile"] = "Perfil activo", ["home.activity"] = "Actividad",
+        ["home.btHint"] = "Bluetooth: mantén PS + Create hasta que la luz parpadee y añádelo en Configuración de Windows → Bluetooth y dispositivos → Agregar dispositivo.", ["home.battery"] = "Batería", ["home.activeProfile"] = "Perfil activo", ["home.activity"] = "Actividad",
 
         ["live.title"] = "Entrada en vivo", ["live.connect"] = "Conecta un mando para ver sus entradas.", ["live.sticks"] = "Joysticks",
         ["live.triggers"] = "Gatillos", ["live.buttons"] = "Botones", ["live.mute"] = "Silencio", ["live.motion"] = "Sensores de movimiento",
@@ -414,7 +414,7 @@ internal static class Strings
 
         ["set.title"] = "Ajustes", ["set.language"] = "Idioma", ["set.languageHint"] = "El nuevo idioma se aplica al volver a abrir la app.",
         ["set.restart"] = "Vuelve a abrir AuroraPad para aplicar el nuevo idioma.", ["set.window"] = "Ventana e inicio",
-        ["set.boot"] = "Iniciar con Windows", ["set.startMin"] = "Iniciar minimizado", ["set.tray"] = "Minimizar a la bandeja (junto al reloj)",
+        ["set.boot"] = "Iniciar con Windows (directo en segundo plano, en la bandeja)", ["set.startMin"] = "Iniciar minimizado", ["set.tray"] = "Seguir funcionando en segundo plano al cerrar o minimizar (icono junto al reloj)",
         ["set.autoProfiles"] = "Perfiles por juego", ["set.autoSwitch"] = "Cambiar de perfil solo cuando un juego vinculado esté en primer plano",
         ["set.foreground"] = "Programa en primer plano: {0}",
         ["sc.title"] = "Atajos con el botón PS", ["sc.enable"] = "Activar atajos",
@@ -459,7 +459,7 @@ internal static class Strings
         ["stage.half"] = "Media presión desde", ["stage.full"] = "A fondo desde",
         ["btn.l2half"] = "L2 media presión", ["btn.l2full"] = "L2 a fondo", ["btn.r2half"] = "R2 media presión", ["btn.r2full"] = "R2 a fondo",
         ["hap.playFile"] = "Reproducir un archivo de audio en los hápticos…", ["hap.fileFilter"] = "Audio", ["hap.fileTitle"] = "Elige un archivo de audio", ["hap.filePlaying"] = "Reproduciendo {0}",
-        ["set.lowBattery"] = "Avisar cuando la batería del mando esté baja (20% y 10%)", ["battery.low"] = "Batería baja en {0}: {1}%",
+        ["set.backgroundHint"] = "En segundo plano la app deja de dibujar y devuelve la memoria de la interfaz a Windows; mando, emulación, asignaciones y hápticos siguen funcionando.", ["set.memory"] = "Memoria en uso ahora: {0} MB (privada: {1} MB)", ["set.lowBattery"] = "Avisar cuando la batería del mando esté baja (20% y 10%)", ["battery.low"] = "Batería baja en {0}: {1}%",
         ["tp.activation"] = "Cómo activar", ["tp.act.both"] = "Doble toque o mantener el dedo", ["tp.act.double"] = "Doble toque rápido", ["tp.act.hold"] = "Mantener el dedo quieto", ["tp.act.always"] = "Siempre activo",
         ["tp.lockHold"] = "Apagar manteniendo el clic (s, 0 = no)", ["tp.holdMs"] = "Tiempo manteniendo (ms)", ["tp.autoLock"] = "Bloquear tras (s sin uso, 0 = nunca)",
         ["tp.state.on"] = "● Ratón activo — mantén el clic del panel para apagarlo", ["tp.state.off"] = "○ Bloqueado — toca dos veces o mantén el dedo para activar; mantén el clic para apagarlo",

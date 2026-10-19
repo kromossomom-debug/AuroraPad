@@ -107,9 +107,10 @@ public sealed class HapticsEngine : IDisposable
                 try { _btWrite!(report); } catch { /* controller asleep or link busy: drop this block */ }
 
                 next += period;
+                // Sleep only (1 ms timer resolution): busy-waiting for sub-ms precision cost ~10% of a CPU core,
+                // and the controller buffers enough that ±1 ms of jitter is not noticeable.
                 double wait = next - clock.Elapsed.TotalMilliseconds;
-                if (wait > 1.5) Thread.Sleep((int)(wait - 1));
-                while (clock.Elapsed.TotalMilliseconds < next) Thread.SpinWait(50);
+                if (wait >= 1) Thread.Sleep((int)Math.Round(wait));
                 if (clock.Elapsed.TotalMilliseconds - next > 100) next = clock.Elapsed.TotalMilliseconds; // resync after a stall
             }
         }
@@ -181,14 +182,36 @@ public sealed class HapticsEngine : IDisposable
         }
     }
 
-    public void Configure(HapticsMode mode, double gain, int lowPassHz)
+    public string? SpeakerError { get; private set; }
+
+    /// <param name="speaker">Mirror the PC's sound to the controller's speaker / headset jack (USB only).</param>
+    public void Configure(HapticsMode mode, double gain, int lowPassHz, bool speaker = false, double speakerVolume = 1)
     {
         _mixer.UseRumble = mode is HapticsMode.RumbleToHaptics or HapticsMode.Both;
+        _mixer.UseAudioHaptics = mode is HapticsMode.AudioToHaptics or HapticsMode.Both;
         _mixer.Gain = (float)Math.Clamp(gain, 0, 4);
-        bool wantAudio = mode is HapticsMode.AudioToHaptics or HapticsMode.Both;
-        if (wantAudio && _loopback == null) StartLoopback(lowPassHz);
-        else if (!wantAudio && _loopback != null) StopLoopback();
+        SpeakerError = null;
+        if (speaker && IsBluetooth) { speaker = false; SpeakerError = "o som pelo controle só funciona com o cabo USB"; }
+        if (speaker && DefaultOutputIsThisController()) { speaker = false; SpeakerError = "o próprio controle já é a saída de som padrão do Windows"; }
+        _mixer.Speaker = speaker;
+        _mixer.SpeakerVolume = (float)Math.Clamp(speakerVolume, 0, 1);
+        bool wantLoopback = _mixer.UseAudioHaptics || speaker;
+        if (wantLoopback && _loopback == null) StartLoopback(lowPassHz);
+        else if (!wantLoopback && _loopback != null) StopLoopback();
         _mixer.SetLowPass(lowPassHz);
+    }
+
+    /// <summary>Capturing the controller's own output and playing it back would loop forever.</summary>
+    private bool DefaultOutputIsThisController()
+    {
+        if (_device == null) return false;
+        try
+        {
+            using var en = new MMDeviceEnumerator();
+            using var def = en.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            return def.ID == _device.ID;
+        }
+        catch { return false; }
     }
 
     /// <summary>
@@ -223,8 +246,7 @@ public sealed class HapticsEngine : IDisposable
             BufferDuration = TimeSpan.FromMilliseconds(200),
         };
         _loopback.DataAvailable += (_, e) => _loopBuffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
-        ISampleProvider src = _loopBuffer.ToSampleProvider();
-        if (src.WaveFormat.Channels > 1) src = new MonoMixer(src);
+        ISampleProvider src = new StereoMixer(_loopBuffer.ToSampleProvider());
         if (src.WaveFormat.SampleRate != _mixer.WaveFormat.SampleRate)
             src = new WdlResamplingSampleProvider(src, _mixer.WaveFormat.SampleRate);
         _mixer.AudioSource = src;
@@ -249,6 +271,29 @@ public sealed class HapticsEngine : IDisposable
         try { _out?.Stop(); } catch { }
         _out?.Dispose();
         _device?.Dispose();
+    }
+
+    /// <summary>Turns any channel layout into stereo (mono is duplicated, surround keeps front L/R).</summary>
+    private sealed class StereoMixer(ISampleProvider source) : ISampleProvider
+    {
+        private float[] _buf = [];
+        public WaveFormat WaveFormat { get; } = WaveFormat.CreateIeeeFloatWaveFormat(source.WaveFormat.SampleRate, 2);
+
+        public int Read(float[] buffer, int offset, int count)
+        {
+            int ch = source.WaveFormat.Channels;
+            int frames = count / 2;
+            if (ch == 2) return source.Read(buffer, offset, frames * 2);
+            if (_buf.Length < frames * ch) _buf = new float[frames * ch];
+            int read = source.Read(_buf, 0, frames * ch) / ch;
+            for (int i = 0; i < read; i++)
+            {
+                float l = _buf[i * ch], r = ch > 1 ? _buf[i * ch + 1] : l;
+                buffer[offset + i * 2] = l;
+                buffer[offset + i * 2 + 1] = r;
+            }
+            return read * 2;
+        }
     }
 
     /// <summary>Averages all channels of a source into mono.</summary>
@@ -283,6 +328,9 @@ public sealed class HapticsEngine : IDisposable
 
         public WaveFormat WaveFormat { get; }
         public bool UseRumble { get; set; }
+        public bool UseAudioHaptics { get; set; }
+        public bool Speaker { get; set; }
+        public float SpeakerVolume { get; set; } = 1f;
         public float Gain { get; set; } = 1f;
         public ISampleProvider? AudioSource { get; set; }
         private ISampleProvider? _file;
@@ -322,8 +370,8 @@ public sealed class HapticsEngine : IDisposable
             var src = AudioSource;
             if (src != null)
             {
-                if (_audio.Length < frames) _audio = new float[frames];
-                audioFrames = src.Read(_audio, 0, frames);
+                if (_audio.Length < frames * 2) _audio = new float[frames * 2];
+                audioFrames = src.Read(_audio, 0, frames * 2) / 2; // stereo
             }
 
             int fileFrames = 0;
@@ -352,10 +400,14 @@ public sealed class HapticsEngine : IDisposable
                         _phaseS = (_phaseS + stepS) % (2 * MathF.PI);
                     }
                     if (i < fileFrames) h += _fileBuf[i];
-                    if (i < audioFrames && _lowPass != null)
-                        h += _lowPass.Transform(_audio[i]) * 3f;
-                    h = Math.Clamp(h * Gain, -1f, 1f);
                     int b = offset + i * _channels;
+                    if (i < audioFrames)
+                    {
+                        float l = _audio[i * 2], r = _audio[i * 2 + 1];
+                        if (UseAudioHaptics && _lowPass != null) h += _lowPass.Transform((l + r) * 0.5f) * 3f;
+                        if (Speaker) { buffer[b] = l * SpeakerVolume; buffer[b + 1] = r * SpeakerVolume; } // speaker / headset
+                    }
+                    h = Math.Clamp(h * Gain, -1f, 1f);
                     buffer[b + 2] = h; // left actuator
                     buffer[b + 3] = h; // right actuator
                 }

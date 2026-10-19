@@ -47,18 +47,18 @@
                   Fill="{Binding R1, Converter={StaticResource Pressed}}" Stroke="#FF3A3D45" StrokeThickness="1" />
 
             <!-- ===== Body: white shell ===== -->
-            <Path Fill="{StaticResource Shell}" Stroke="{StaticResource ShellEdge}" StrokeThickness="2"
+            <Path Fill="{StaticResource Shell}" Stroke="{StaticResource ShellEdge}" StrokeThickness="2" CacheMode="BitmapCache"
                   Data="M 300,58 C 360,58 405,52 445,60 C 500,70 535,95 553,140 C 575,190 600,280 592,335 C 586,372 548,392 518,370 C 492,350 470,305 446,282 C 425,262 400,258 300,258 C 200,258 175,262 154,282 C 130,305 108,350 82,370 C 52,392 14,372 8,335 C 0,280 25,190 47,140 C 65,95 100,70 155,60 C 195,52 240,58 300,58 Z">
                 <Path.Effect>
                     <DropShadowEffect BlurRadius="24" ShadowDepth="6" Opacity="0.45" />
                 </Path.Effect>
             </Path>
             <!-- Subtle grip shading -->
-            <Path Fill="#14000000" Data="M 47,140 C 25,190 0,280 8,335 C 14,372 52,392 82,370 C 70,360 40,330 46,270 C 50,220 60,180 70,150 Z" />
-            <Path Fill="#14000000" Data="M 553,140 C 575,190 600,280 592,335 C 586,372 548,392 518,370 C 530,360 560,330 554,270 C 550,220 540,180 530,150 Z" />
+            <Path Fill="#14000000" CacheMode="BitmapCache" Data="M 47,140 C 25,190 0,280 8,335 C 14,372 52,392 82,370 C 70,360 40,330 46,270 C 50,220 60,180 70,150 Z" />
+            <Path Fill="#14000000" CacheMode="BitmapCache" Data="M 553,140 C 575,190 600,280 592,335 C 586,372 548,392 518,370 C 530,360 560,330 554,270 C 550,220 540,180 530,150 Z" />
 
             <!-- ===== Black core ===== -->
-            <Path Fill="{StaticResource Core}"
+            <Path Fill="{StaticResource Core}" CacheMode="BitmapCache"
                   Data="M 205,62 L 395,62 C 420,110 432,170 430,210 C 428,242 410,258 380,258 L 220,258 C 190,258 172,242 170,210 C 168,170 180,110 205,62 Z" />
 
             <!-- ===== Lightbar (both sides of the touchpad) ===== -->
@@ -155,8 +155,8 @@
             </Rectangle>
 
             <!-- ===== Sticks ===== -->
-            <Ellipse Canvas.Left="194" Canvas.Top="178" Width="68" Height="68" Fill="#FF0B0C0E" Stroke="#FF2A2C32" StrokeThickness="2" />
-            <Ellipse Canvas.Left="338" Canvas.Top="178" Width="68" Height="68" Fill="#FF0B0C0E" Stroke="#FF2A2C32" StrokeThickness="2" />
+            <Ellipse CacheMode="BitmapCache" Canvas.Left="194" Canvas.Top="178" Width="68" Height="68" Fill="#FF0B0C0E" Stroke="#FF2A2C32" StrokeThickness="2" />
+            <Ellipse CacheMode="BitmapCache" Canvas.Left="338" Canvas.Top="178" Width="68" Height="68" Fill="#FF0B0C0E" Stroke="#FF2A2C32" StrokeThickness="2" />
             <Grid Canvas.Left="{Binding LCapLeft}" Canvas.Top="{Binding LCapTop}" Width="42" Height="42">
                 <Ellipse Fill="{Binding L3, Converter={StaticResource Pressed}}" Stroke="#FF4A4E57" StrokeThickness="2" />
                 <Ellipse Margin="9" Stroke="#FF15161A" StrokeThickness="2" />

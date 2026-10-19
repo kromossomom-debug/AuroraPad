@@ -20,6 +20,9 @@
     <Version>1.2.0</Version>
     <ApplicationIcon>..\..\assets\aurorapad.ico</ApplicationIcon>
     <Product>AuroraPad</Product>
+    <!-- Lighter footprint for an app that mostly runs in the tray. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
     <Description>DualSense, DualSense Edge and DualShock 4 companion for Windows</Description>
   </PropertyGroup>
 

@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AuroraPad.App.Localization;
@@ -31,6 +31,13 @@ public sealed partial class MainViewModel
     [ObservableProperty] private bool _gyroAutoCalibrate;
     [ObservableProperty] private bool _lowBatteryAlert;
     [ObservableProperty] private string _hapticsFileStatus = "";
+    [ObservableProperty] private string _memoryText = "";
+
+    private void UpdateMemory()
+    {
+        using var p = System.Diagnostics.Process.GetCurrentProcess();
+        MemoryText = L.F("set.memory", p.WorkingSet64 / (1024 * 1024), p.PrivateMemorySize64 / (1024 * 1024));
+    }
 
     /// <summary>Raised to show a tray notification (title, message).</summary>
     public event Action<string, string>? Notify;
@@ -88,6 +95,40 @@ public sealed partial class MainViewModel
         _loading = false;
     }
 
+    // ---- Background mode ------------------------------------------------------
+
+    [System.Runtime.InteropServices.DllImport("psapi.dll")]
+    private static extern bool EmptyWorkingSet(IntPtr process);
+
+    public bool IsInBackground { get; private set; }
+
+    /// <summary>
+    /// While the window is hidden or minimized nothing needs drawing: stop the per-frame refresh,
+    /// slow the status timer down and hand the UI's memory back to Windows. Controllers, emulation,
+    /// mappings, haptics and servers keep running.
+    /// </summary>
+    public void SetBackground(bool background)
+    {
+        if (background == IsInBackground) return;
+        IsInBackground = background;
+        if (background)
+        {
+            _liveTimer.Stop();
+            _timer.Interval = TimeSpan.FromSeconds(5);
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(1500); // let WPF release the hidden window's render resources first
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+                GC.WaitForPendingFinalizers();
+                EmptyWorkingSet(System.Diagnostics.Process.GetCurrentProcess().Handle);
+            });
+        }
+        else
+        {
+            _timer.Interval = TimeSpan.FromMilliseconds(250);
+            _liveTimer.Start();
+        }
+    }
     // ---- Gyro --------------------------------------------------------------
 
     [RelayCommand]

@@ -12,7 +12,7 @@ public static class AutoStart
     {
         using var key = Registry.CurrentUser.CreateSubKey(RunKey);
         if (enabled)
-            key.SetValue(ValueName, $"\"{Environment.ProcessPath}\" --minimized");
+            key.SetValue(ValueName, $"\"{Environment.ProcessPath}\" --background");
         else if (key.GetValue(ValueName) != null)
             key.DeleteValue(ValueName);
     }
