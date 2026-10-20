@@ -682,6 +682,31 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void OpenHidHidePage() =>
         Process.Start(new ProcessStartInfo("https://github.com/nefarius/HidHide/releases") { UseShellExecute = true });
 
+    // ---- Support the project --------------------------------------------
+
+    public const string BuyMeACoffeeUrl = "https://buymeacoffee.com/kromossomoc";
+    public const string PixKey = "94af8068-d112-4c69-bcfa-8789b233246e";
+    // Static Pix BR Code (EMV) for the key above, the same one encoded in Assets/pix-qr.png.
+    public const string PixPayload = "00020126580014br.gov.bcb.pix013694af8068-d112-4c69-bcfa-8789b233246e5204000053039865802BR5908CLIPNOVA6006BRASIL62070503***63047773";
+    public string PixKeyText => PixKey;
+    [ObservableProperty] private string _supportStatus = "";
+
+    [RelayCommand]
+    private void OpenBuyMeACoffee() =>
+        Process.Start(new ProcessStartInfo(BuyMeACoffeeUrl) { UseShellExecute = true });
+
+    [RelayCommand]
+    private void CopyPixKey() => CopyToClipboard(PixKey, "sup.keyCopied");
+
+    [RelayCommand]
+    private void CopyPixCode() => CopyToClipboard(PixPayload, "sup.codeCopied");
+
+    private void CopyToClipboard(string text, string doneKey)
+    {
+        try { System.Windows.Clipboard.SetText(text); SupportStatus = L.T(doneKey); }
+        catch { SupportStatus = L.T("sup.copyFailed"); }
+    }
+
     // ---- Settings -----------------------------------------------------
 
     private void SettingsEdited(string property)

@@ -17,7 +17,7 @@
     <!-- Only for the tray icon (NotifyIcon); WinForms namespaces are not imported globally. -->
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>AuroraPad</AssemblyName>
-    <Version>1.5.0</Version>
+    <Version>1.6.0</Version>
     <ApplicationIcon>..\..\assets\aurorapad.ico</ApplicationIcon>
     <Product>AuroraPad</Product>
     <!-- Lighter footprint for an app that mostly runs in the tray. -->
@@ -33,6 +33,7 @@
 
   <!-- Ship the ViGEmBus installer next to the exe so the "Instalar ViGEmBus" button works. -->
   <ItemGroup>
+    <Resource Include="Assets\pix-qr.png" />
     <None Include="..\..\drivers\*.exe" Link="drivers\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

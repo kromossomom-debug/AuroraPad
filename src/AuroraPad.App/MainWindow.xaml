@@ -1000,6 +1000,42 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+            <!-- ================= SUPPORT ================= -->
+            <TabItem Header="{l:T nav.support}" Tag="&#xEB51;" Style="{StaticResource NavTab}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="28">
+                        <TextBlock Style="{StaticResource H1}" Text="{l:T sup.title}" />
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource H2}" Text="{l:T sup.bmcTitle}" />
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,12" Text="{l:T sup.hint}" />
+                                <Button Command="{Binding OpenBuyMeACoffeeCommand}" Background="#FFFFDD00" Foreground="#FF1A1A1A" Padding="20,10" HorizontalAlignment="Left">
+                                    <TextBlock Text="☕  Buy Me a Coffee" FontSize="15" FontWeight="Bold" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Left" Background="White" CornerRadius="12" Padding="10" Margin="0,0,24,0" VerticalAlignment="Top">
+                                    <Image Source="/Assets/pix-qr.png" Width="200" Height="200" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource H2}" Text="{l:T sup.pixTitle}" />
+                                    <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,12" Text="{l:T sup.pixHint}" />
+                                    <TextBlock Style="{StaticResource Dim}" Text="{l:T sup.pixKey}" />
+                                    <TextBox Text="{Binding PixKeyText, Mode=OneWay}" IsReadOnly="True" FontFamily="Consolas" Margin="0,4,0,12" MaxWidth="420" HorizontalAlignment="Left" />
+                                    <WrapPanel>
+                                        <Button Content="{l:T sup.copyKey}" Command="{Binding CopyPixKeyCommand}" />
+                                        <Button Content="{l:T sup.copyCode}" Command="{Binding CopyPixCodeCommand}" Style="{StaticResource Secondary}" />
+                                    </WrapPanel>
+                                    <TextBlock Text="{Binding SupportStatus}" Foreground="#FF34C759" Margin="0,6,0,0" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <TextBlock Style="{StaticResource Dim}" Text="{l:T sup.thanks}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
 
         <Border Grid.Row="1" Background="#FF111317">

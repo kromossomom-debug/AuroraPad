@@ -23,6 +23,7 @@ internal static class Strings
         ["nav.home"] = "Início", ["nav.live"] = "Controle", ["nav.triggers"] = "Gatilhos adaptativos", ["nav.lighting"] = "Iluminação",
         ["nav.rumble"] = "Vibração e hápticos", ["nav.sticks"] = "Analógicos", ["nav.km"] = "Teclado, mouse e macros",
         ["nav.profiles"] = "Perfis", ["nav.library"] = "Biblioteca de jogos", ["nav.emulation"] = "Emulação e conexões", ["nav.settings"] = "Configurações",
+        ["nav.support"] = "Apoie o projeto", ["sup.title"] = "Apoie o AuroraPad", ["sup.bmcTitle"] = "Pague um café", ["sup.hint"] = "O AuroraPad é gratuito e de código aberto. Se ele te ajudou, considere apoiar o desenvolvimento.", ["sup.pixTitle"] = "Pix", ["sup.pixHint"] = "Escaneie o QR Code no app do seu banco ou use a chave abaixo.", ["sup.pixKey"] = "Chave Pix (aleatória)", ["sup.copyKey"] = "Copiar chave", ["sup.copyCode"] = "Pix copia e cola", ["sup.keyCopied"] = "Chave Pix copiada!", ["sup.codeCopied"] = "Código Pix copiado!", ["sup.copyFailed"] = "Não foi possível copiar.", ["sup.thanks"] = "Obrigado pelo apoio! 💙",
 
         ["home.title"] = "Controles", ["home.none"] = "Nenhum controle encontrado",
         ["home.noneHint"] = "Conecte um DualSense, DualSense Edge ou DualShock 4 por cabo USB ou Bluetooth. Ele aparece aqui automaticamente.",
@@ -189,6 +190,7 @@ internal static class Strings
         ["nav.home"] = "Home", ["nav.live"] = "Controller", ["nav.triggers"] = "Adaptive triggers", ["nav.lighting"] = "Lighting",
         ["nav.rumble"] = "Rumble & haptics", ["nav.sticks"] = "Sticks", ["nav.km"] = "Keyboard, mouse & macros",
         ["nav.profiles"] = "Profiles", ["nav.library"] = "Game library", ["nav.emulation"] = "Emulation & connections", ["nav.settings"] = "Settings",
+        ["nav.support"] = "Support the project", ["sup.title"] = "Support AuroraPad", ["sup.bmcTitle"] = "Buy me a coffee", ["sup.hint"] = "AuroraPad is free and open source. If it helped you, consider supporting its development.", ["sup.pixTitle"] = "Pix (Brazil)", ["sup.pixHint"] = "Scan the QR code in your bank app or use the key below.", ["sup.pixKey"] = "Pix key (random)", ["sup.copyKey"] = "Copy key", ["sup.copyCode"] = "Copy Pix code", ["sup.keyCopied"] = "Pix key copied!", ["sup.codeCopied"] = "Pix code copied!", ["sup.copyFailed"] = "Could not copy.", ["sup.thanks"] = "Thank you for your support! 💙",
 
         ["home.title"] = "Controllers", ["home.none"] = "No controller found",
         ["home.noneHint"] = "Connect a DualSense, DualSense Edge or DualShock 4 by USB cable or Bluetooth. It shows up here automatically.",
@@ -355,6 +357,7 @@ internal static class Strings
         ["nav.home"] = "Inicio", ["nav.live"] = "Mando", ["nav.triggers"] = "Gatillos adaptativos", ["nav.lighting"] = "Iluminación",
         ["nav.rumble"] = "Vibración y hápticos", ["nav.sticks"] = "Joysticks", ["nav.km"] = "Teclado, ratón y macros",
         ["nav.profiles"] = "Perfiles", ["nav.library"] = "Biblioteca de juegos", ["nav.emulation"] = "Emulación y conexiones", ["nav.settings"] = "Ajustes",
+        ["nav.support"] = "Apoya el proyecto", ["sup.title"] = "Apoya AuroraPad", ["sup.bmcTitle"] = "Invítame un café", ["sup.hint"] = "AuroraPad es gratuito y de código abierto. Si te ayudó, considera apoyar su desarrollo.", ["sup.pixTitle"] = "Pix (Brasil)", ["sup.pixHint"] = "Escanea el código QR en la app de tu banco o usa la clave de abajo.", ["sup.pixKey"] = "Clave Pix (aleatoria)", ["sup.copyKey"] = "Copiar clave", ["sup.copyCode"] = "Copiar código Pix", ["sup.keyCopied"] = "¡Clave Pix copiada!", ["sup.codeCopied"] = "¡Código Pix copiado!", ["sup.copyFailed"] = "No se pudo copiar.", ["sup.thanks"] = "¡Gracias por tu apoyo! 💙",
 
         ["home.title"] = "Mandos", ["home.none"] = "No se encontró ningún mando",
         ["home.noneHint"] = "Conecta un DualSense, DualSense Edge o DualShock 4 por cable USB o Bluetooth. Aparecerá aquí automáticamente.",

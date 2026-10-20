@@ -11,6 +11,8 @@ Gatilhos adaptativos, hápticos, barra de luz, touchpad como mouse, emulação d
 **Bring your DualSense to the PC for real.**
 Adaptive triggers, haptics, lightbar, touchpad as a mouse, Xbox 360 / DualShock 4 emulation and much more — in a light, good-looking app.
 
+<p align="center"><a href="https://buymeacoffee.com/kromossomoc"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-ffdd00?style=for-the-badge&labelColor=1a1a1a" alt="Buy Me a Coffee"></a></p>
+
 ### [🇧🇷 Português](#-português) · [🇺🇸 English](#-english)
 
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
@@ -153,6 +155,27 @@ Perfis e configurações ficam em `%APPDATA%\AuroraPad`.
 - Por Bluetooth, os hápticos usam o relatório HID 0x32 e o som do PC no alto-falante do controle usa o relatório 0x36 (áudio Opus), sem precisar de cabo.
 - O HidHide pode exigir rodar o AuroraPad como administrador.
 
+### 💙 Apoie o projeto
+
+O AuroraPad é gratuito e de código aberto. Se ele te ajudou, considere apoiar o desenvolvimento — também dá para fazer isso direto no app, na aba **Apoie o projeto**.
+
+<a href="https://buymeacoffee.com/kromossomoc"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-ffdd00?style=for-the-badge&labelColor=1a1a1a" alt="Buy Me a Coffee"></a>
+
+**Pix (Brasil):**
+
+<img src="src/AuroraPad.App/Assets/pix-qr.png" width="200" alt="QR Code Pix">
+
+Chave Pix (aleatória): `94af8068-d112-4c69-bcfa-8789b233246e`
+
+<details><summary>Pix copia e cola</summary>
+
+```
+00020126580014br.gov.bcb.pix013694af8068-d112-4c69-bcfa-8789b233246e5204000053039865802BR5908CLIPNOVA6006BRASIL62070503***63047773
+```
+</details>
+
+Obrigado pelo apoio! 💙
+
 ### 📜 Aviso legal
 
 AuroraPad é um projeto independente e **não é afiliado, endossado ou patrocinado pela Sony Interactive Entertainment**. "PlayStation", "DualSense" e "DualShock" são marcas registradas de seus respectivos donos e são citadas apenas para indicar compatibilidade. A ilustração do controle é original.
@@ -294,6 +317,27 @@ Profiles and settings live in `%APPDATA%\AuroraPad`.
 - Keyboard/mouse mapping uses `SendInput`; some games with anti-cheat ignore synthetic input.
 - Over Bluetooth, haptics use HID report 0x32 and PC audio on the controller speaker uses report 0x36 (Opus audio), no cable needed.
 - HidHide may require running AuroraPad as administrator.
+
+### 💙 Support the project
+
+AuroraPad is free and open source. If it helped you, consider supporting its development — you can also do it from the app, in the **Support the project** page.
+
+<a href="https://buymeacoffee.com/kromossomoc"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-ffdd00?style=for-the-badge&labelColor=1a1a1a" alt="Buy Me a Coffee"></a>
+
+**Pix (Brazil):**
+
+<img src="src/AuroraPad.App/Assets/pix-qr.png" width="200" alt="QR Code Pix">
+
+Pix key (random): `94af8068-d112-4c69-bcfa-8789b233246e`
+
+<details><summary>Pix copy-and-paste code</summary>
+
+```
+00020126580014br.gov.bcb.pix013694af8068-d112-4c69-bcfa-8789b233246e5204000053039865802BR5908CLIPNOVA6006BRASIL62070503***63047773
+```
+</details>
+
+Thank you for your support! 💙
 
 ### 📜 Legal
 
